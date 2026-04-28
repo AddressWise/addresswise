@@ -1,0 +1,18 @@
+[Unit]
+Description=address_wise_4 API service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=addresswise
+Group=addresswise
+WorkingDirectory=/opt/address_wise_4/repo
+EnvironmentFile=/etc/address_wise_4.env
+ExecStart=/opt/address_wise_4/repo/target/release/address_wise_4
+Restart=always
+RestartSec=5
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

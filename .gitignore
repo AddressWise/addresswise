@@ -1,0 +1,6 @@
+/target
+/.env
+/.tantivy_index/
+/*.dump
+/*.dump.gz
+/.DS_Store
