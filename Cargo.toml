@@ -1,8 +1,8 @@
 [package]
-name = "address_wise_4"
+name = "address_wise"
 version = "0.1.0"
 edition = "2024"
-default-run = "address_wise_4"
+default-run = "address_wise"
 
 [dependencies]
 anyhow = "1.0.95"

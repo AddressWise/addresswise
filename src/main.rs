@@ -107,7 +107,7 @@ async fn main() -> Result<(), AppError> {
 
 fn init_tracing() {
     let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("address_wise_4=info,ntex=info,sqlx=warn"));
+        .unwrap_or_else(|_| EnvFilter::new("address_wise=info,ntex=info,sqlx=warn"));
 
     tracing_subscriber::fmt().with_env_filter(filter).init();
 }
