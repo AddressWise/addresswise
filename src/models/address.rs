@@ -18,7 +18,7 @@ pub struct ResolveAddressRequest {
     pub country: Option<String>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct StructuredAddressInput {
     #[serde(default, alias = "houseNumber")]
     pub house_number: Option<String>,
@@ -61,9 +61,4 @@ pub struct Address {
 pub struct MatchDiagnostics {
     pub trigram_score: f64,
     pub levenshtein_distance: Option<i32>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct AutocompleteResponse {
-    pub message: &'static str,
 }

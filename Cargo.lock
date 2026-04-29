@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "address_wise_4"
+name = "address_wise"
 version = "0.1.0"
 dependencies = [
  "anyhow",

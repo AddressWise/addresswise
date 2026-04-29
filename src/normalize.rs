@@ -31,7 +31,7 @@ pub fn canonical_country_code(input: &str) -> Option<String> {
     }
 
     let normalized = normalize_text(trimmed);
-    
+
     // 1. Check if it's already a 2-letter ISO code
     if normalized.len() == 2 {
         let upper = normalized.to_ascii_uppercase();

@@ -35,6 +35,15 @@ curl -X POST http://localhost:8080/resolve-address \
     }
   }'
 
-# 4. Autocomplete (Currently returns 501 Not Implemented)
+# 4. Autocomplete - Session-aware street prefix search
 curl -X POST http://localhost:8080/autocomplete \
-  -H "Content-Type: application/json"
+  -H "Content-Type: application/json" \
+  -d '{
+    "sessionId": "demo-session-1",
+    "query": "aven",
+    "countryBias": "FR",
+    "limit": 10
+  }'
+
+# 5. Autocomplete Sandbox
+# Open http://localhost:8080/sandbox/autocomplete in a browser.

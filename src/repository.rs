@@ -10,13 +10,11 @@ pub struct AddressRepository {
 #[derive(Debug)]
 pub struct AddressSearch {
     pub query: String,
-    pub fuzzy_query: Option<String>,
     pub country_code: Option<String>,
     pub postal_code_key: Option<String>,
     pub street: Option<String>,
     pub city: Option<String>,
     pub house_number_key: Option<String>,
-    pub candidate_limit: i64,
     pub max_edit_distance: i32,
 }
 
@@ -101,128 +99,12 @@ impl AddressRepository {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows.into_iter().map(|candidate| {
-            candidate.into_response(search.query.clone(), search.max_edit_distance)
-        }).collect())
-    }
-
-    pub async fn resolve(
-        &self,
-        search: &AddressSearch,
-    ) -> Result<Option<ResolveAddressResponse>, sqlx::Error> {
-        let mut query_builder = sqlx::QueryBuilder::new("WITH candidate_pool AS (");
-        let mut has_branch = false;
-
-        // 1. High priority: Exact postal code match (B-tree)
-        if let Some(pc) = &search.postal_code_key {
-            query_builder.push("(SELECT a.id, a.country_code::text, a.admin_area, a.locality, a.dependent_locality, a.thoroughfare, a.premise, a.premise_type, a.subpremise, a.postal_code, a.latitude, a.longitude, a.full_address AS formatted, a.search_text ");
-            query_builder.push("FROM addresses a WHERE a.is_active = TRUE ");
-            query_builder.push("AND public.address_wise_compact(a.postal_code) = ").push_bind(pc);
-            if let Some(cc) = &search.country_code {
-                query_builder.push(" AND a.country_code = ").push_bind(cc);
-            }
-            query_builder.push(" LIMIT ").push_bind(search.candidate_limit).push(")");
-            has_branch = true;
-        }
-
-        // 2. Medium priority: Specific fuzzy query (GIN)
-        if let Some(fuzzy) = &search.fuzzy_query {
-            if has_branch { query_builder.push(" UNION ALL "); }
-            query_builder.push("(SELECT a.id, a.country_code::text, a.admin_area, a.locality, a.dependent_locality, a.thoroughfare, a.premise, a.premise_type, a.subpremise, a.postal_code, a.latitude, a.longitude, a.full_address AS formatted, a.search_text ");
-            query_builder.push("FROM addresses a WHERE a.is_active = TRUE AND a.search_text % ").push_bind(fuzzy);
-            if let Some(cc) = &search.country_code {
-                query_builder.push(" AND a.country_code = ").push_bind(cc);
-            }
-            if let Some(pc) = &search.postal_code_key {
-                query_builder.push(" AND public.address_wise_compact(a.postal_code) != ").push_bind(pc);
-            }
-            query_builder.push(" LIMIT ").push_bind(search.candidate_limit).push(")");
-            has_branch = true;
-        }
-
-        // 3. Fallback: Street AND City
-        if let (Some(street), Some(city)) = (&search.street, &search.city) {
-            if has_branch { query_builder.push(" UNION ALL "); }
-            query_builder.push("(SELECT a.id, a.country_code::text, a.admin_area, a.locality, a.dependent_locality, a.thoroughfare, a.premise, a.premise_type, a.subpremise, a.postal_code, a.latitude, a.longitude, a.full_address AS formatted, a.search_text ");
-            query_builder.push("FROM addresses a WHERE a.is_active = TRUE ");
-            query_builder.push("AND a.search_text % ").push_bind(street);
-            query_builder.push(" AND a.search_text % ").push_bind(city);
-            if let Some(cc) = &search.country_code {
-                query_builder.push(" AND a.country_code = ").push_bind(cc);
-            }
-            if let Some(pc) = &search.postal_code_key {
-                query_builder.push(" AND public.address_wise_compact(a.postal_code) != ").push_bind(pc);
-            }
-            query_builder.push(" LIMIT 100)");
-            has_branch = true;
-        }
-
-        if !has_branch {
-            query_builder.push("(SELECT a.id, a.country_code::text, a.admin_area, a.locality, a.dependent_locality, a.thoroughfare, a.premise, a.premise_type, a.subpremise, a.postal_code, a.latitude, a.longitude, a.full_address AS formatted, a.search_text ");
-            query_builder.push("FROM addresses a WHERE a.is_active = TRUE AND a.search_text % ").push_bind(&search.query);
-            if let Some(cc) = &search.country_code {
-                query_builder.push(" AND a.country_code = ").push_bind(cc);
-            }
-            query_builder.push(" LIMIT ").push_bind(search.candidate_limit).push(")");
-        }
-
-        query_builder.push("), scored_candidates AS (");
-        query_builder.push("SELECT *, ");
-        query_builder.push("similarity(search_text, ").push_bind(&search.query).push(")::float8 AS trigram_score, ");
-        query_builder.push("levenshtein_less_equal(LEFT(search_text, 255), LEFT(").push_bind(&search.query).push(", 255), ").push_bind(search.max_edit_distance).push(") AS edit_distance ");
-        query_builder.push("FROM candidate_pool) ");
-        
-        query_builder.push("SELECT id, formatted, country_code, admin_area, locality, dependent_locality, thoroughfare, premise, premise_type, subpremise, postal_code, latitude, longitude, LEAST(1.0, trigram_score * 0.62 + ");
-        
-        query_builder.push("CASE WHEN ");
-        if let Some(cc) = &search.country_code {
-            query_builder.push("country_code = ").push_bind(cc).push(" THEN 0.06 ELSE 0.0 END");
-        } else {
-            query_builder.push("FALSE THEN 0.06 ELSE 0.0 END");
-        }
-        
-        query_builder.push(" + CASE WHEN ");
-        if let Some(pc) = &search.postal_code_key {
-            query_builder.push("public.address_wise_compact(postal_code) = ").push_bind(pc).push(" THEN 0.14 ELSE 0.0 END");
-        } else {
-            query_builder.push("FALSE THEN 0.14 ELSE 0.0 END");
-        }
-
-        query_builder.push(" + CASE WHEN ");
-        if let Some(hn) = &search.house_number_key {
-            query_builder.push("(public.address_wise_compact(premise) = ").push_bind(hn).push(" OR public.address_wise_compact(premise) LIKE ").push_bind(format!("{}%", hn)).push(") THEN 0.12 ELSE 0.0 END");
-        } else {
-            query_builder.push("FALSE THEN 0.12 ELSE 0.0 END");
-        }
-
-        query_builder.push(" + CASE WHEN ");
-        if let Some(st) = &search.street {
-            query_builder.push("TRUE THEN GREATEST(similarity(search_text, ").push_bind(st).push(")::float8, similarity(COALESCE(public.address_wise_normalize(thoroughfare), ''), ").push_bind(st).push(")::float8) * 0.12 ELSE 0.0 END");
-        } else {
-            query_builder.push("FALSE THEN 0.0 ELSE 0.0 END");
-        }
-
-        query_builder.push(" + CASE WHEN ");
-        if let Some(ct) = &search.city {
-            query_builder.push("TRUE THEN GREATEST(similarity(search_text, ").push_bind(ct).push(")::float8, similarity(COALESCE(public.address_wise_normalize(locality), ''), ").push_bind(ct).push(")::float8) * 0.08 ELSE 0.0 END");
-        } else {
-            query_builder.push("FALSE THEN 0.0 ELSE 0.0 END");
-        }
-
-        query_builder.push(" + CASE WHEN edit_distance <= ");
-        query_builder.push_bind(search.max_edit_distance);
-        query_builder.push(" THEN (1.0 - (edit_distance::float8 / GREATEST(length(");
-        query_builder.push_bind(&search.query);
-        query_builder.push("), 1)::float8)) * 0.10 ELSE 0.0 END)::float8 AS score, trigram_score, edit_distance FROM scored_candidates ORDER BY score DESC, trigram_score DESC, edit_distance ASC, id ASC LIMIT 1");
-
-        let row = query_builder
-            .build_query_as::<AddressCandidate>()
-            .fetch_optional(&self.pool)
-            .await?;
-
-        Ok(row.map(|candidate| {
-            candidate.into_response(search.query.clone(), search.max_edit_distance)
-        }))
+        Ok(rows
+            .into_iter()
+            .map(|candidate| {
+                candidate.into_response(search.query.clone(), search.max_edit_distance)
+            })
+            .collect())
     }
 }
 
@@ -265,10 +147,34 @@ pub struct AddressRecord {
     pub search_text: String,
 }
 
+#[derive(Debug, sqlx::FromRow)]
+pub struct AutocompleteAddressRecord {
+    pub id: i64,
+    pub country_code: String,
+    pub thoroughfare: Option<String>,
+    pub full_address: String,
+    pub locality: Option<String>,
+    pub postal_code: Option<String>,
+}
+
 impl AddressRepository {
-    pub fn stream_all(&self) -> impl futures::Stream<Item = Result<AddressRecord, sqlx::Error>> + '_ {
+    pub fn stream_all(
+        &self,
+    ) -> impl futures::Stream<Item = Result<AddressRecord, sqlx::Error>> + '_ {
         sqlx::query_as::<_, AddressRecord>(
-            "SELECT id, search_text FROM addresses WHERE is_active = TRUE"
-        ).fetch(&self.pool)
+            "SELECT id, search_text FROM addresses WHERE is_active = TRUE",
+        )
+        .fetch(&self.pool)
+    }
+
+    pub fn stream_autocomplete(
+        &self,
+    ) -> impl futures::Stream<Item = Result<AutocompleteAddressRecord, sqlx::Error>> + '_ {
+        sqlx::query_as::<_, AutocompleteAddressRecord>(
+            "SELECT id, country_code::text, thoroughfare, full_address, locality, postal_code \
+             FROM addresses \
+             WHERE is_active = TRUE AND thoroughfare IS NOT NULL AND full_address <> ''",
+        )
+        .fetch(&self.pool)
     }
 }

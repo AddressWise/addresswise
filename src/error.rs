@@ -9,8 +9,6 @@ pub enum AppError {
     BadRequest(String),
     #[error("no matching address found")]
     NotFound,
-    #[error("{0}")]
-    NotImplemented(String),
     #[error("database error")]
     Database(#[from] sqlx::Error),
     #[error("migration error")]
@@ -23,7 +21,7 @@ pub enum AppError {
     Io(#[from] std::io::Error),
     #[error("internal error")]
     Internal(#[from] anyhow::Error),
-    }
+}
 
 #[derive(Serialize)]
 struct ErrorResponse<'a> {
@@ -41,26 +39,29 @@ impl AppError {
         Self::BadRequest(message.into())
     }
 
-    pub fn not_implemented(message: impl Into<String>) -> Self {
-        Self::NotImplemented(message.into())
-    }
-
     fn code(&self) -> &'static str {
         match self {
             Self::BadRequest(_) => "bad_request",
             Self::NotFound => "not_found",
-            Self::NotImplemented(_) => "not_implemented",
-            Self::Database(_) | Self::Migration(_) | Self::Io(_) | Self::Tantivy(_) | Self::TantivyQuery(_) | Self::Internal(_) => "internal_error",
+            Self::Database(_)
+            | Self::Migration(_)
+            | Self::Io(_)
+            | Self::Tantivy(_)
+            | Self::TantivyQuery(_)
+            | Self::Internal(_) => "internal_error",
         }
     }
 
     fn public_message(&self) -> String {
         match self {
-            Self::BadRequest(message) | Self::NotImplemented(message) => message.clone(),
+            Self::BadRequest(message) => message.clone(),
             Self::NotFound => "no matching address found".to_string(),
-            Self::Database(_) | Self::Migration(_) | Self::Io(_) | Self::Tantivy(_) | Self::TantivyQuery(_) | Self::Internal(_) => {
-                "internal server error".to_string()
-            }
+            Self::Database(_)
+            | Self::Migration(_)
+            | Self::Io(_)
+            | Self::Tantivy(_)
+            | Self::TantivyQuery(_)
+            | Self::Internal(_) => "internal server error".to_string(),
         }
     }
 }
@@ -70,10 +71,12 @@ impl WebResponseError<DefaultError> for AppError {
         match self {
             Self::BadRequest(_) => StatusCode::BAD_REQUEST,
             Self::NotFound => StatusCode::NOT_FOUND,
-            Self::NotImplemented(_) => StatusCode::NOT_IMPLEMENTED,
-            Self::Database(_) | Self::Migration(_) | Self::Io(_) | Self::Tantivy(_) | Self::TantivyQuery(_) | Self::Internal(_) => {
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+            Self::Database(_)
+            | Self::Migration(_)
+            | Self::Io(_)
+            | Self::Tantivy(_)
+            | Self::TantivyQuery(_)
+            | Self::Internal(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
