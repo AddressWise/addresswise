@@ -34,17 +34,32 @@ async fn autocomplete(
 }
 
 #[web::get("/sandbox/autocomplete")]
-async fn autocomplete_sandbox() -> HttpResponse {
+async fn autocomplete_sandbox(state: web::types::State<AppState>) -> HttpResponse {
     let mut response = HttpResponse::build(StatusCode::OK);
     response.set_header(header::CONTENT_TYPE, "text/html; charset=utf-8");
-    response.body(SANDBOX_HTML)
+    response.body(render_sandbox_html(&state.addresses.country_codes()))
 }
 
 #[web::get("/sandbox/address-resolve")]
-async fn resolve_address_sandbox() -> HttpResponse {
+async fn resolve_address_sandbox(state: web::types::State<AppState>) -> HttpResponse {
     let mut response = HttpResponse::build(StatusCode::OK);
     response.set_header(header::CONTENT_TYPE, "text/html; charset=utf-8");
-    response.body(SANDBOX_HTML)
+    response.body(render_sandbox_html(&state.addresses.country_codes()))
+}
+
+fn render_sandbox_html(country_codes: &[String]) -> String {
+    SANDBOX_HTML.replace(
+        "<!-- COUNTRY_BIAS_OPTIONS -->",
+        &render_country_bias_options(country_codes),
+    )
+}
+
+fn render_country_bias_options(country_codes: &[String]) -> String {
+    country_codes
+        .iter()
+        .map(|code| format!(r#"<option value="{code}"></option>"#))
+        .collect::<Vec<_>>()
+        .join("")
 }
 
 const SANDBOX_HTML: &str = r#"<!doctype html>
@@ -303,7 +318,8 @@ const SANDBOX_HTML: &str = r#"<!doctype html>
             </div>
             <div>
               <label for="countryBias">Country Bias</label>
-              <input id="countryBias" autocomplete="off" spellcheck="false" placeholder="FR" />
+              <input id="countryBias" list="countryBiasOptions" autocomplete="off" spellcheck="false" placeholder="FR" />
+              <datalist id="countryBiasOptions"><!-- COUNTRY_BIAS_OPTIONS --></datalist>
             </div>
             <div>
               <label for="sessionId">Session ID</label>

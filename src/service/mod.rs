@@ -68,6 +68,10 @@ impl AddressService {
         self.autocomplete.complete(request).await
     }
 
+    pub fn country_codes(&self) -> Vec<String> {
+        self.autocomplete.country_codes()
+    }
+
     fn prepare_search(&self, input: ResolvedInput) -> Result<AddressSearch, AppError> {
         Self::prepare_search_with_limit(input)
     }
@@ -150,6 +154,13 @@ impl AddressService {
             .as_deref()
             .and_then(non_empty)
             .map(compact_alphanumeric)
+            .or_else(|| {
+                infer_house_number_key_from_query(
+                    &query,
+                    postal_code_key.as_deref(),
+                    country_code.as_deref(),
+                )
+            })
             .filter(|value| !value.is_empty());
 
         let max_edit_distance = ((query.len() as f64) * 0.18).ceil() as i32;
@@ -241,6 +252,47 @@ fn infer_postal_key_from_query(query: &str, country_code: Option<&str>) -> Optio
     None
 }
 
+fn infer_house_number_key_from_query(
+    query: &str,
+    postal_code_key: Option<&str>,
+    country_code: Option<&str>,
+) -> Option<String> {
+    let tokens = query.split_whitespace().collect::<Vec<_>>();
+    let mut end = tokens.len();
+
+    if let Some(cc) = country_code {
+        if let Some(last) = tokens.last() {
+            if last.eq_ignore_ascii_case(cc) || canonical_country_code(last).as_deref() == Some(cc)
+            {
+                end = end.saturating_sub(1);
+            }
+        }
+    }
+
+    if let Some(postal) = postal_code_key {
+        for width in [2, 1] {
+            if end < width {
+                continue;
+            }
+
+            let candidate = tokens[end - width..end].join("");
+            if compact_alphanumeric(&candidate) == postal {
+                end = end.saturating_sub(width);
+                break;
+            }
+        }
+    }
+
+    for index in (0..end).rev() {
+        let token = compact_alphanumeric(tokens[index]);
+        if token.chars().any(|c| c.is_ascii_digit()) {
+            return Some(token);
+        }
+    }
+
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -256,6 +308,7 @@ mod tests {
         assert_eq!(search.query, "avenue de france 123 stiring wendel 57350 fr");
         assert_eq!(search.country_code.as_deref(), Some("FR"));
         assert_eq!(search.postal_code_key.as_deref(), Some("57350"));
+        assert_eq!(search.house_number_key.as_deref(), Some("123"));
     }
 
     #[test]
@@ -311,5 +364,30 @@ mod tests {
 
         assert_eq!(search.country_code, None);
         assert_eq!(search.postal_code_key.as_deref(), Some("47301"));
+        assert_eq!(search.house_number_key.as_deref(), Some("174"));
+    }
+
+    #[test]
+    fn prepares_plain_text_query_with_house_number_after_street() {
+        let search = AddressService::prepare_search_with_limit(ResolvedInput {
+            query: Some("HLava ulica 47 Vojany 07672 SK".to_string()),
+            ..ResolvedInput::default()
+        })
+        .expect("search input");
+
+        assert_eq!(search.country_code.as_deref(), Some("SK"));
+        assert_eq!(search.postal_code_key.as_deref(), Some("07672"));
+        assert_eq!(search.house_number_key.as_deref(), Some("47"));
+    }
+
+    #[test]
+    fn prepares_plain_text_query_with_house_number_before_street() {
+        let search = AddressService::prepare_search_with_limit(ResolvedInput {
+            query: Some("221B Baker Street London".to_string()),
+            ..ResolvedInput::default()
+        })
+        .expect("search input");
+
+        assert_eq!(search.house_number_key.as_deref(), Some("221b"));
     }
 }

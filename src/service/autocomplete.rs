@@ -30,6 +30,7 @@ struct AutocompleteIndex {
     string_pool: StringPool,
     country_order: Box<[u32]>,
     country_ranges: HashMap<CountryCode, Range<usize>>,
+    country_codes: Box<[CountryCode]>,
 }
 
 #[derive(Debug, Clone)]
@@ -158,10 +159,7 @@ impl AutocompleteService {
             } else {
                 builder.intern(house_norm)
             };
-            let locality_idx = row
-                .locality
-                .map(|s| builder.intern(s))
-                .unwrap_or(u32::MAX);
+            let locality_idx = row.locality.map(|s| builder.intern(s)).unwrap_or(u32::MAX);
             let postal_idx = row
                 .postal_code
                 .map(|s| builder.intern(s))
@@ -198,6 +196,7 @@ impl AutocompleteService {
         });
 
         let mut country_ranges = HashMap::new();
+        let mut country_codes = Vec::new();
         let mut start = 0;
         while start < country_order.len() {
             let country = entries[country_order[start] as usize].country_code;
@@ -208,6 +207,7 @@ impl AutocompleteService {
                 end += 1;
             }
             country_ranges.insert(country, start..end);
+            country_codes.push(country);
             start = end;
         }
 
@@ -224,6 +224,7 @@ impl AutocompleteService {
                 string_pool,
                 country_order: country_order.into_boxed_slice(),
                 country_ranges,
+                country_codes: country_codes.into_boxed_slice(),
             }),
             sessions: Arc::new(RwLock::new(HashMap::new())),
             session_ttl: DEFAULT_AUTOCOMPLETE_SESSION_TTL,
@@ -251,12 +252,9 @@ impl AutocompleteService {
         }
 
         let scope = match request.country_bias.as_deref().and_then(non_empty) {
-            Some(value) => SearchScope::Country(
-                CountryCode::parse(value)
-                    .ok_or_else(|| {
-                        AppError::bad_request("country_bias must be a 2-letter ISO country code")
-                    })?,
-            ),
+            Some(value) => SearchScope::Country(CountryCode::parse(value).ok_or_else(|| {
+                AppError::bad_request("country_bias must be a 2-letter ISO country code")
+            })?),
             None => SearchScope::Global,
         };
 
@@ -269,7 +267,8 @@ impl AutocompleteService {
         self.evict_expired_sessions(&mut sessions);
 
         let reusable_range = sessions.remove(session_id).and_then(|existing| {
-            (existing.scope == scope && query.starts_with(&existing.prefix)).then_some(existing.range)
+            (existing.scope == scope && query.starts_with(&existing.prefix))
+                .then_some(existing.range)
         });
 
         let range = self.search_range(&query, scope, reusable_range);
@@ -293,6 +292,14 @@ impl AutocompleteService {
             country_bias: scope.country_code().map(|value| value.to_string()),
             suggestions,
         })
+    }
+
+    pub(super) fn country_codes(&self) -> Vec<String> {
+        self.index
+            .country_codes
+            .iter()
+            .map(|value| value.to_string())
+            .collect()
     }
 
     fn search_range(
@@ -351,7 +358,7 @@ impl AutocompleteService {
             let entry = self.entry_at(scope, mid);
             let street = self.index.string_pool.get(entry.street_norm_idx);
             let house = self.index.string_pool.get(entry.house_norm_idx);
-            
+
             if compare_target(street, house, query) == Ordering::Less {
                 left = mid + 1;
             } else {
@@ -365,7 +372,7 @@ impl AutocompleteService {
     fn is_match(&self, entry: &AutocompleteEntry, query: &str) -> bool {
         let street = self.index.string_pool.get(entry.street_norm_idx);
         let house = self.index.string_pool.get(entry.house_norm_idx);
-        
+
         if query.len() <= street.len() {
             street.starts_with(query)
         } else if street.eq(&query[..street.len()]) && query.as_bytes()[street.len()] == b' ' {
@@ -429,7 +436,7 @@ fn compare_target(street: &str, house: &str, query: &str) -> Ordering {
     let s_len = street.len();
     let q_len = query.len();
     let cmp_len = s_len.min(q_len);
-    
+
     match street[..cmp_len].cmp(&query[..cmp_len]) {
         Ordering::Equal => {
             if q_len <= s_len {
@@ -451,7 +458,7 @@ fn compare_target(street: &str, house: &str, query: &str) -> Ordering {
                                     Ordering::Less
                                 }
                             }
-                            ord => ord
+                            ord => ord,
                         }
                     }
                 } else {
@@ -463,7 +470,7 @@ fn compare_target(street: &str, house: &str, query: &str) -> Ordering {
                 }
             }
         }
-        ord => ord
+        ord => ord,
     }
 }
 
@@ -471,9 +478,15 @@ impl AutocompleteEntry {
     fn cmp_global(&self, other: &Self, pool: &StringPool) -> Ordering {
         pool.get(self.street_norm_idx)
             .cmp(pool.get(other.street_norm_idx))
-            .then_with(|| pool.get(self.house_norm_idx).cmp(pool.get(other.house_norm_idx)))
+            .then_with(|| {
+                pool.get(self.house_norm_idx)
+                    .cmp(pool.get(other.house_norm_idx))
+            })
             .then_with(|| self.country_code.cmp(&other.country_code))
-            .then_with(|| pool.get(self.formatted_idx).cmp(pool.get(other.formatted_idx)))
+            .then_with(|| {
+                pool.get(self.formatted_idx)
+                    .cmp(pool.get(other.formatted_idx))
+            })
             .then_with(|| self.id.cmp(&other.id))
     }
 
@@ -496,7 +509,6 @@ impl AutocompleteEntry {
         }
     }
 }
-
 
 impl CountryCode {
     fn parse(value: &str) -> Option<Self> {
@@ -622,6 +634,7 @@ mod tests {
         });
 
         let mut country_ranges = HashMap::new();
+        let mut country_codes = Vec::new();
         let mut start = 0;
         while start < country_order.len() {
             let country = entries[country_order[start] as usize].country_code;
@@ -632,6 +645,7 @@ mod tests {
                 end += 1;
             }
             country_ranges.insert(country, start..end);
+            country_codes.push(country);
             start = end;
         }
 
@@ -641,6 +655,7 @@ mod tests {
                 string_pool,
                 country_order: country_order.into_boxed_slice(),
                 country_ranges,
+                country_codes: country_codes.into_boxed_slice(),
             }),
             sessions: Arc::new(RwLock::new(HashMap::new())),
             session_ttl: DEFAULT_AUTOCOMPLETE_SESSION_TTL,
@@ -748,9 +763,21 @@ mod tests {
 
         // Should find "1" and "10" but not "2"
         assert_eq!(res.suggestions.len(), 2);
-        assert!(res.suggestions.iter().any(|s| s.formatted.contains("France 1,")));
-        assert!(res.suggestions.iter().any(|s| s.formatted.contains("France 10,")));
-        assert!(!res.suggestions.iter().any(|s| s.formatted.contains("France 2,")));
+        assert!(
+            res.suggestions
+                .iter()
+                .any(|s| s.formatted.contains("France 1,"))
+        );
+        assert!(
+            res.suggestions
+                .iter()
+                .any(|s| s.formatted.contains("France 10,"))
+        );
+        assert!(
+            !res.suggestions
+                .iter()
+                .any(|s| s.formatted.contains("France 2,"))
+        );
     }
 
     #[tokio::test]
@@ -799,5 +826,33 @@ mod tests {
 
         assert_eq!(second.suggestions.len(), 1);
         assert_eq!(second.suggestions[0].country_code, "US");
+    }
+
+    #[tokio::test]
+    async fn exposes_sorted_unique_country_codes() {
+        let mut pool = TestPool::new();
+        let entries = vec![
+            test_entry(&mut pool, 1, "US", "Broadway", "Broadway 1, New York, US"),
+            test_entry(
+                &mut pool,
+                2,
+                "FR",
+                "Avenue de France",
+                "Avenue de France 1, Paris, FR",
+            ),
+            test_entry(
+                &mut pool,
+                3,
+                "US",
+                "Fifth Avenue",
+                "Fifth Avenue 1, New York, US",
+            ),
+        ];
+        let service = autocomplete_service(entries, pool.build());
+
+        assert_eq!(
+            service.country_codes(),
+            vec!["FR".to_string(), "US".to_string()]
+        );
     }
 }
