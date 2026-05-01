@@ -73,15 +73,17 @@ impl AddressRepository {
                 id, formatted, country_code, admin_area, locality, dependent_locality, 
                 thoroughfare, premise, premise_type, subpremise, postal_code, 
                 latitude, longitude, 
-                LEAST(
-                    1.0,
-                    trigram_score * 0.62
+                (
+                    trigram_score * 0.52
                     + CASE WHEN $4::text IS NOT NULL AND country_code = $4 THEN 0.06 ELSE 0.0 END
-                    + CASE WHEN $5::text IS NOT NULL AND public.address_wise_compact(postal_code) = $5 THEN 0.14 ELSE 0.0 END
-                    + CASE WHEN $6::text IS NOT NULL AND (public.address_wise_compact(premise) = $6 OR public.address_wise_compact(premise) LIKE $6 || '%') THEN 0.12 ELSE 0.0 END
-                    + CASE WHEN $7::text IS NOT NULL THEN GREATEST(similarity(search_text, $7)::float8, similarity(COALESCE(public.address_wise_normalize(thoroughfare), ''), $7)::float8) * 0.12 ELSE 0.0 END
-                    + CASE WHEN $8::text IS NOT NULL THEN GREATEST(similarity(search_text, $8)::float8, similarity(COALESCE(public.address_wise_normalize(locality), ''), $8)::float8) * 0.20 ELSE 0.0 END
-                    + CASE WHEN edit_distance <= $3 THEN (1.0 - (edit_distance::float8 / GREATEST(length($1), 1)::float8)) * 0.10 ELSE 0.0 END
+                    + CASE WHEN $5::text IS NOT NULL AND public.address_wise_compact(postal_code) = $5 THEN 0.12 ELSE 0.0 END
+                    + CASE WHEN $6::text IS NOT NULL AND public.address_wise_compact(premise) = $6 THEN 0.30
+                           WHEN $6::text IS NOT NULL AND public.address_wise_compact(premise) LIKE $6 || '%' THEN 0.08
+                           ELSE 0.0
+                      END
+                    + CASE WHEN $7::text IS NOT NULL THEN GREATEST(similarity(search_text, $7)::float8, similarity(COALESCE(public.address_wise_normalize(thoroughfare), ''), $7)::float8) * 0.10 ELSE 0.0 END
+                    + CASE WHEN $8::text IS NOT NULL THEN GREATEST(similarity(search_text, $8)::float8, similarity(COALESCE(public.address_wise_normalize(locality), ''), $8)::float8) * 0.14 ELSE 0.0 END
+                    + CASE WHEN edit_distance <= $3 THEN (1.0 - (edit_distance::float8 / GREATEST(length($1), 1)::float8)) * 0.08 ELSE 0.0 END
                 )::float8 AS score,
                 trigram_score,
                 edit_distance

@@ -11,8 +11,16 @@ use crate::state::AppState;
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(resolve_address);
     cfg.service(autocomplete);
+    cfg.service(index);
     cfg.service(autocomplete_sandbox);
     cfg.service(resolve_address_sandbox);
+}
+
+#[web::get("/")]
+async fn index(state: web::types::State<AppState>) -> HttpResponse {
+    let mut response = HttpResponse::build(StatusCode::OK);
+    response.set_header(header::CONTENT_TYPE, "text/html; charset=utf-8");
+    response.body(render_sandbox_html(&state.addresses.country_codes()))
 }
 
 #[web::post("/resolve-address")]
