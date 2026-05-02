@@ -75,24 +75,29 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AddressWise API</title>
+  <title>AddressWise</title>
   <style>
     :root {
-      --bg: #f4efe8;
-      --bg-strong: #e8dccb;
-      --panel: rgba(255, 252, 247, 0.84);
-      --panel-strong: rgba(255, 248, 238, 0.94);
-      --ink: #172026;
-      --muted: #5a676d;
-      --accent: #b24b2a;
-      --accent-strong: #8f3519;
-      --accent-soft: #f6d6bf;
-      --forest: #234d43;
-      --line: rgba(23, 32, 38, 0.1);
-      --shadow: 0 30px 90px rgba(69, 41, 18, 0.15);
+      --page: #f5f9ff;
+      --page-strong: #eef5ff;
+      --panel: rgba(255, 255, 255, 0.88);
+      --panel-solid: #ffffff;
+      --line: rgba(34, 64, 112, 0.12);
+      --line-strong: rgba(34, 64, 112, 0.18);
+      --ink: #11233f;
+      --muted: #60718d;
+      --soft: #8da0bf;
+      --accent: #1565f7;
+      --accent-strong: #0f4fcc;
+      --accent-soft: rgba(21, 101, 247, 0.1);
+      --success: #0d8a6a;
+      --shadow: 0 26px 70px rgba(38, 78, 153, 0.12);
+      --shadow-soft: 0 18px 42px rgba(38, 78, 153, 0.08);
       --radius-xl: 32px;
       --radius-lg: 24px;
       --radius-md: 18px;
+      --radius-sm: 14px;
+      --content: 1180px;
     }
 
     * { box-sizing: border-box; }
@@ -100,122 +105,130 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 
     body {
       margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
+      font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(178, 75, 42, 0.18), transparent 34%),
-        radial-gradient(circle at top right, rgba(35, 77, 67, 0.15), transparent 30%),
-        radial-gradient(circle at bottom left, rgba(218, 160, 109, 0.16), transparent 28%),
-        linear-gradient(180deg, #faf5ee, var(--bg));
+        radial-gradient(circle at top left, rgba(21, 101, 247, 0.12), transparent 32%),
+        radial-gradient(circle at 85% 12%, rgba(111, 179, 255, 0.18), transparent 24%),
+        linear-gradient(180deg, #fbfdff 0%, var(--page) 55%, #ffffff 100%);
       min-height: 100vh;
     }
 
-    main {
-      max-width: 1160px;
-      margin: 0 auto;
-      padding: 24px 20px 88px;
+    a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    .shell {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-xl);
+    code {
+      font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+    }
+
+    main {
+      width: min(var(--content), calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 88px;
+    }
+
+    .page-shell {
+      border: 1px solid rgba(255, 255, 255, 0.78);
+      border-radius: 36px;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.72));
       box-shadow: var(--shadow);
       overflow: hidden;
-      backdrop-filter: blur(16px);
+      backdrop-filter: blur(24px);
     }
 
     .topbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 20px;
-      padding: 18px 28px;
-      border-bottom: 1px solid var(--line);
+      gap: 24px;
+      padding: 22px 34px;
+      border-bottom: 1px solid rgba(34, 64, 112, 0.08);
+      background: rgba(255, 255, 255, 0.72);
     }
 
     .brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       font-size: 0.95rem;
-      letter-spacing: 0.18em;
+      font-weight: 700;
+      letter-spacing: 0.08em;
       text-transform: uppercase;
     }
 
     .brand-mark {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       display: grid;
       place-items: center;
       border-radius: 14px;
+      background: linear-gradient(135deg, #1e6dff, #71bbff);
       color: white;
-      background: linear-gradient(135deg, var(--accent), var(--forest));
-      font-weight: 700;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38);
     }
 
     .topnav {
       display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
       align-items: center;
+      gap: 22px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.95rem;
     }
 
-    .topnav a,
-    .topnav button {
-      border: 0;
-      background: transparent;
-      color: var(--muted);
-      font: inherit;
-      cursor: pointer;
-      text-decoration: none;
-      padding: 0;
+    .topnav a {
+      transition: color 150ms ease;
+    }
+
+    .topnav a:hover {
+      color: var(--ink);
     }
 
     .hero {
       display: grid;
-      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
-      gap: 28px;
-      padding: 34px 28px 28px;
-      border-bottom: 1px solid var(--line);
+      grid-template-columns: minmax(0, 1.05fr) minmax(420px, 0.95fr);
+      gap: 40px;
+      padding: 54px 34px 46px;
+      align-items: center;
     }
 
     .eyebrow {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      padding: 8px 12px;
+      padding: 10px 14px;
       border-radius: 999px;
-      background: rgba(255,255,255,0.62);
-      border: 1px solid rgba(178, 75, 42, 0.14);
+      background: var(--accent-soft);
       color: var(--accent-strong);
-      font-size: 0.76rem;
-      letter-spacing: 0.12em;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
     }
 
     h1 {
-      margin: 16px 0 14px;
-      font-size: clamp(2.8rem, 7vw, 5.5rem);
-      line-height: 0.92;
-      letter-spacing: -0.05em;
-      text-transform: uppercase;
+      margin: 22px 0 18px;
+      max-width: 11ch;
+      font-size: clamp(3rem, 7vw, 5.6rem);
+      line-height: 0.95;
+      letter-spacing: -0.07em;
     }
 
     .hero-copy p {
-      margin: 0 0 16px;
+      margin: 0;
       max-width: 60ch;
       color: var(--muted);
-      font-size: 1.05rem;
-      line-height: 1.65;
+      font-size: 1.08rem;
+      line-height: 1.75;
     }
 
     .hero-actions {
       display: flex;
-      gap: 12px;
+      gap: 14px;
       flex-wrap: wrap;
-      margin-top: 24px;
+      margin: 28px 0 36px;
     }
 
     .action,
@@ -223,654 +236,858 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      min-height: 48px;
-      padding: 0 18px;
-      border-radius: 999px;
+      min-height: 52px;
+      padding: 0 20px;
       border: 1px solid transparent;
-      text-decoration: none;
+      border-radius: 999px;
       cursor: pointer;
       font: inherit;
       font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease, background 150ms ease;
+    }
+
+    .action:hover,
+    button.action:hover {
+      transform: translateY(-1px);
     }
 
     .action-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+      background: linear-gradient(135deg, var(--accent), #4d94ff);
       color: white;
-      box-shadow: 0 18px 35px rgba(178, 75, 42, 0.24);
+      box-shadow: 0 16px 34px rgba(21, 101, 247, 0.22);
     }
 
     .action-secondary {
-      background: rgba(255,255,255,0.58);
+      background: rgba(255, 255, 255, 0.84);
       color: var(--ink);
-      border-color: rgba(23, 32, 38, 0.1);
+      border-color: var(--line);
     }
 
-    .hero-card,
-    .section-card,
-    .demo-card {
-      border-radius: var(--radius-lg);
-      border: 1px solid var(--line);
-      background: var(--panel-strong);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.45);
-    }
-
-    .hero-card {
-      padding: 22px;
-      background:
-        linear-gradient(160deg, rgba(255,255,255,0.72), rgba(246,214,191,0.76)),
-        rgba(255,248,238,0.96);
-    }
-
-    .hero-card h2,
-    .section-card h2,
-    .demo-head h2 {
-      margin: 0 0 10px;
-      font-size: 1.15rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
-
-    .signal-grid,
-    .feature-grid,
-    .pricing-grid,
-    .trust-grid,
-    .steps-grid,
-    .demo-grid {
+    .hero-metrics {
       display: grid;
-      gap: 18px;
-    }
-
-    .signal-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      margin-top: 18px;
-    }
-
-    .signal {
-      padding: 16px;
-      border-radius: var(--radius-md);
-      background: rgba(255,255,255,0.7);
-      border: 1px solid rgba(23, 32, 38, 0.08);
-    }
-
-    .signal strong {
-      display: block;
-      font-size: 1.7rem;
-      letter-spacing: -0.04em;
-      margin-bottom: 4px;
-    }
-
-    .stack {
-      display: grid;
-      gap: 18px;
-      padding: 22px 28px 28px;
-    }
-
-    .section-card {
-      padding: 22px;
-    }
-
-    .section-card p,
-    .demo-head p,
-    .pricing-card p,
-    .step p,
-    .small-copy {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .feature-grid,
-    .trust-grid,
-    .steps-grid,
-    .pricing-grid {
       grid-template-columns: repeat(3, minmax(0, 1fr));
-      margin-top: 18px;
+      gap: 14px;
+      max-width: 620px;
     }
 
-    .feature,
-    .trust,
-    .step,
-    .pricing-card {
+    .metric {
       padding: 18px;
-      border-radius: var(--radius-md);
-      background: rgba(255,255,255,0.7);
-      border: 1px solid rgba(23, 32, 38, 0.08);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-soft);
     }
 
-    .feature strong,
-    .trust strong,
-    .step strong,
-    .pricing-card strong {
+    .metric strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 1.35rem;
+      letter-spacing: -0.04em;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .hero-visual {
+      position: relative;
+    }
+
+    .hero-visual::before {
+      content: "";
+      position: absolute;
+      inset: -20px 8% auto auto;
+      width: 190px;
+      height: 190px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(21, 101, 247, 0.18), transparent 68%);
+      pointer-events: none;
+    }
+
+    .demo-window {
+      position: relative;
+      border-radius: 28px;
+      border: 1px solid rgba(34, 64, 112, 0.1);
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .demo-window-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(34, 64, 112, 0.08);
+      background: linear-gradient(180deg, rgba(245, 249, 255, 0.95), rgba(255, 255, 255, 0.92));
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .window-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(34, 64, 112, 0.18);
+    }
+
+    .demo-window-head strong {
+      font-size: 0.95rem;
+    }
+
+    .demo-window-head small {
+      color: var(--muted);
+    }
+
+    .typed-demo {
+      padding: 22px;
+      display: grid;
+      gap: 18px;
+      background:
+        radial-gradient(circle at top right, rgba(21, 101, 247, 0.05), transparent 30%),
+        white;
+    }
+
+    .product-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .product-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-weight: 700;
+    }
+
+    .hero-input {
+      position: relative;
+      padding: 18px 20px;
+      border-radius: 22px;
+      border: 1px solid rgba(21, 101, 247, 0.15);
+      background: linear-gradient(180deg, #ffffff, #f7fbff);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .hero-input label,
+    .field label {
       display: block;
       margin-bottom: 8px;
-      font-size: 1.02rem;
-    }
-
-    .pricing-card.featured {
-      background: linear-gradient(180deg, rgba(246,214,191,0.72), rgba(255,255,255,0.78));
-      border-color: rgba(178, 75, 42, 0.24);
-      transform: translateY(-4px);
-    }
-
-    .plan-kicker {
-      color: var(--accent-strong);
+      color: var(--muted);
       font-size: 0.76rem;
-      letter-spacing: 0.12em;
+      font-weight: 700;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 8px;
     }
 
-    .price {
+    .typed-line {
+      min-height: 34px;
+      font-size: 1.32rem;
+      letter-spacing: -0.03em;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 1px;
+      height: 1.15em;
+      margin-left: 4px;
+      background: var(--accent);
+      vertical-align: -0.16em;
+      animation: blink 1s steps(1) infinite;
+    }
+
+    .demo-results {
+      display: grid;
+      gap: 12px;
+    }
+
+    .demo-result {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid rgba(34, 64, 112, 0.08);
+      background: rgba(247, 251, 255, 0.9);
+      opacity: 0;
+      transform: translateY(8px);
+      animation: float-in 320ms ease forwards;
+    }
+
+    .demo-result.active {
+      border-color: rgba(21, 101, 247, 0.22);
+      background: linear-gradient(180deg, rgba(232, 242, 255, 0.95), rgba(247, 251, 255, 0.92));
+    }
+
+    .demo-result strong,
+    .live-result strong,
+    .resolved-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 1rem;
+    }
+
+    .demo-result small,
+    .live-result small,
+    .resolved-card small {
+      color: var(--muted);
+      font-size: 0.84rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .demo-footnote {
       display: flex;
-      align-items: baseline;
-      gap: 10px;
-      margin: 6px 0 10px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 0.9rem;
     }
 
-    .price .value {
-      font-size: 2.35rem;
+    .section-stack {
+      display: grid;
+      gap: 22px;
+      padding: 0 34px 34px;
+    }
+
+    .section {
+      padding: 32px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: rgba(255, 255, 255, 0.8);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 20px;
+      align-items: end;
+      margin-bottom: 22px;
+    }
+
+    .section-header h2 {
+      margin: 0 0 10px;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
       letter-spacing: -0.05em;
     }
 
-    .pricing-card ul,
-    .step ul {
-      margin: 14px 0 0;
-      padding-left: 18px;
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .demo-card {
-      overflow: hidden;
-    }
-
-    .demo-head {
-      padding: 22px 22px 8px;
-      border-bottom: 1px solid var(--line);
-    }
-
-    .demo-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      padding: 18px;
-    }
-
-    .sandbox {
-      border: 1px solid var(--line);
-      border-radius: 22px;
-      background: rgba(255, 255, 255, 0.58);
-      overflow: hidden;
-    }
-
-    .sandbox-head {
-      padding: 20px 22px 8px;
-    }
-
-    .sandbox-head h3 {
-      margin: 0 0 6px;
-      font-size: 1.05rem;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-    }
-
-    .sandbox-head p {
+    .section-header p,
+    .section-copy,
+    .field-note,
+    .live-empty,
+    .error,
+    .detail-value,
+    .endpoint-copy {
       margin: 0;
       color: var(--muted);
-      line-height: 1.55;
+      line-height: 1.7;
     }
 
-    .controls {
+    .cards-3,
+    .cards-2 {
       display: grid;
-      grid-template-columns: 1.5fr 1fr 180px;
-      gap: 14px;
-      padding: 20px 22px;
+      gap: 16px;
     }
 
-    .resolve-controls {
+    .cards-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .cards-2 {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 0.74rem;
-      font-weight: 700;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: var(--muted);
+    .card {
+      padding: 22px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 251, 255, 0.88));
     }
 
-    input {
+    .card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      counter-reset: step;
+    }
+
+    .workflow-step {
+      position: relative;
+      padding: 22px;
+      padding-top: 56px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .workflow-step::before {
+      counter-increment: step;
+      content: "0" counter(step);
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      color: var(--accent);
+      font-size: 0.84rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .workflow-step strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.05rem;
+    }
+
+    .workflow-step p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .code-panel {
+      padding: 22px;
+      border-radius: 22px;
+      background: #0f1d38;
+      color: #dce7ff;
+      overflow: auto;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .code-panel pre {
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
+    .live-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+    }
+
+    .live-card {
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .live-card h3 {
+      margin: 0 0 8px;
+      font-size: 1.2rem;
+      letter-spacing: -0.03em;
+    }
+
+    .live-card > p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .field-grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .field-grid.autocomplete-grid {
+      grid-template-columns: minmax(0, 1.4fr) 170px 190px;
+    }
+
+    .field-grid.resolve-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .field input {
       width: 100%;
-      border: 1px solid rgba(23, 32, 38, 0.14);
+      border: 1px solid var(--line-strong);
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.84);
+      background: white;
       color: var(--ink);
       padding: 15px 16px;
       font: inherit;
       outline: none;
-      transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
+      transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
     }
 
-    input:focus {
-      border-color: var(--accent);
+    .field input:focus {
+      border-color: rgba(21, 101, 247, 0.42);
+      box-shadow: 0 0 0 4px rgba(21, 101, 247, 0.1);
       transform: translateY(-1px);
-      box-shadow: 0 0 0 4px rgba(178, 75, 42, 0.12);
     }
 
-    .meta {
-      display: flex;
-      gap: 18px;
-      flex-wrap: wrap;
-      padding: 0 22px 18px;
-      color: var(--muted);
+    .field-note {
+      margin-top: 10px;
       font-size: 0.92rem;
     }
 
-    .meta strong { color: var(--ink); }
-
-    .results {
-      padding: 0 12px 12px;
+    .live-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 18px 0 14px;
     }
 
-    .result {
-      margin: 10px 0;
+    .meta-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      background: #f5f9ff;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .meta-chip strong {
+      color: var(--ink);
+    }
+
+    .live-results,
+    .resolve-results {
+      display: grid;
+      gap: 12px;
+    }
+
+    .live-result,
+    .resolved-card,
+    .live-empty,
+    .error {
       padding: 16px 18px;
       border-radius: 18px;
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px solid rgba(23, 32, 38, 0.08);
-      animation: rise 180ms ease;
+      border: 1px solid var(--line);
+      background: rgba(247, 251, 255, 0.94);
     }
 
-    .result strong {
-      display: block;
-      font-size: 1.05rem;
-      margin-bottom: 4px;
+    .live-result {
+      animation: float-in 180ms ease;
     }
 
-    .result small {
-      color: var(--muted);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+    .resolved-card {
+      display: grid;
+      gap: 14px;
     }
 
-    .empty, .error {
-      margin: 12px 10px 0;
-      padding: 18px;
-      border-radius: 18px;
-    }
-
-    .empty {
-      background: rgba(255, 255, 255, 0.68);
-      color: var(--muted);
-    }
-
-    .error {
-      background: rgba(178, 75, 42, 0.12);
-      color: #8a2818;
-    }
-
-    .details {
+    .detail-grid {
       display: grid;
       gap: 10px;
     }
 
     .detail-row {
       display: grid;
-      grid-template-columns: 150px 1fr;
-      gap: 12px;
+      grid-template-columns: 160px 1fr;
+      gap: 14px;
       padding: 12px 14px;
       border-radius: 16px;
-      background: rgba(255, 255, 255, 0.78);
-      border: 1px solid rgba(23, 32, 38, 0.08);
+      background: white;
+      border: 1px solid rgba(34, 64, 112, 0.08);
     }
 
-    .detail-row strong {
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-size: 0.75rem;
+    .detail-label {
       color: var(--muted);
+      font-size: 0.76rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
     }
 
-    .detail-row span {
+    .detail-value {
       word-break: break-word;
     }
 
-    .code-strip {
+    .error {
+      color: #b24040;
+      background: rgba(255, 236, 236, 0.95);
+      border-color: rgba(178, 64, 64, 0.14);
+    }
+
+    .resolve-actions {
+      display: flex;
+      justify-content: flex-start;
       margin-top: 18px;
-      padding: 18px;
-      border-radius: var(--radius-md);
-      background: #172026;
-      color: #f4efe8;
-      font-family: "Courier New", monospace;
-      overflow: auto;
     }
 
-    .footer-cta {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 18px;
+    .cta-band {
+      display: flex;
       align-items: center;
-      padding: 22px;
-      border-radius: var(--radius-lg);
-      background: linear-gradient(135deg, rgba(35,77,67,0.92), rgba(23,32,38,0.94));
-      color: white;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 28px 32px;
+      border: 1px solid rgba(21, 101, 247, 0.16);
+      border-radius: 28px;
+      background: linear-gradient(135deg, #f4f9ff, #ffffff);
     }
 
-    .footer-cta p {
-      margin: 0;
-      color: rgba(255,255,255,0.78);
-      line-height: 1.6;
-    }
-
-    .footer-cta strong {
+    .cta-band strong {
       display: block;
-      font-size: 1.45rem;
       margin-bottom: 8px;
+      font-size: 1.4rem;
+      letter-spacing: -0.04em;
     }
 
-    code {
-      font-family: "Courier New", monospace;
+    .cta-band p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
     }
 
-    @keyframes rise {
-      from { opacity: 0; transform: translateY(8px); }
+    .status-ok { color: var(--success); }
+    .status-loading { color: var(--accent); }
+    .status-error { color: #b24040; }
+
+    @keyframes blink {
+      0%, 49% { opacity: 1; }
+      50%, 100% { opacity: 0; }
+    }
+
+    @keyframes float-in {
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 960px) {
+    @media (max-width: 1080px) {
       .hero,
-      .demo-grid,
-      .feature-grid,
-      .pricing-grid,
-      .trust-grid,
-      .steps-grid,
-      .footer-cta {
+      .live-grid,
+      .cards-3,
+      .workflow {
         grid-template-columns: 1fr;
+      }
+
+      .hero {
+        gap: 28px;
       }
     }
 
-    @media (max-width: 760px) {
-      .topbar,
-      .controls,
-      .resolve-controls,
-      .detail-row,
-      .signal-grid {
+    @media (max-width: 860px) {
+      .field-grid.autocomplete-grid,
+      .field-grid.resolve-grid,
+      .cards-2,
+      .hero-metrics,
+      .cta-band,
+      .section-header {
         grid-template-columns: 1fr;
       }
 
+      .section-header,
+      .cta-band {
+        display: grid;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .hero {
+        padding-top: 40px;
+      }
+    }
+
+    @media (max-width: 720px) {
       main {
-        padding: 12px 12px 40px;
+        width: min(var(--content), calc(100% - 18px));
+        padding: 10px 0 42px;
       }
 
       .topbar,
       .hero,
-      .stack,
-      .controls,
-      .meta,
-      .demo-head {
+      .section-stack {
         padding-left: 18px;
         padding-right: 18px;
+      }
+
+      .section-stack {
+        padding-bottom: 18px;
+      }
+
+      .section,
+      .live-card,
+      .cta-band {
+        padding: 20px;
+      }
+
+      .detail-row {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        max-width: none;
       }
     }
   </style>
 </head>
 <body>
   <main>
-    <section class="shell">
-      <div class="topbar">
+    <section class="page-shell">
+      <header class="topbar">
         <div class="brand">
           <div class="brand-mark">AW</div>
-          <div>AddressWise API</div>
+          <div>AddressWise</div>
         </div>
         <nav class="topnav">
           <a href="#product">Product</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#billing">Billing</a>
-          <a href="#demo">Live Demo</a>
+          <a href="#workflow">Workflow</a>
+          <a href="#api">API</a>
+          <a href="#live-demo">Live Demo</a>
         </nav>
-      </div>
+      </header>
 
       <section class="hero">
         <div class="hero-copy">
-          <div class="eyebrow">Address intelligence for forms, checkout, CRM, and logistics</div>
-          <h1>Sell fewer failed deliveries.</h1>
-          <p>AddressWise gives product teams one API for street autocomplete and full address resolution across real postal datasets. You can test the live endpoints on this page, then move straight into production with API keys and usage-based billing.</p>
-          <p>The strongest fit is B2B infrastructure: checkout forms, onboarding flows, shipping validation, lead capture, marketplace seller forms, and back-office cleanup.</p>
+          <div class="eyebrow">Address infrastructure for B2B software</div>
+          <h1>Make address entry feel reliable.</h1>
+          <p>AddressWise is a hosted API for autocomplete and address resolution. Product teams use it to reduce form friction, improve delivery quality, and standardize messy address input before it reaches checkout, onboarding, logistics, or CRM workflows.</p>
           <div class="hero-actions">
-            <a class="action action-primary" href="#demo">Try the live demo</a>
-            <a class="action action-secondary" href="#pricing">See pricing</a>
+            <a class="action action-primary" href="#live-demo">Try the live API</a>
+            <a class="action action-secondary" href="#product">See how it works</a>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric">
+              <strong>Autocomplete</strong>
+              <span>Street-first suggestions while the user types.</span>
+            </div>
+            <div class="metric">
+              <strong>Resolution</strong>
+              <span>Free-text and structured address matching in one API.</span>
+            </div>
+            <div class="metric">
+              <strong>Hosted</strong>
+              <span>Integrated as SaaS, not sold as self-deployed software.</span>
+            </div>
           </div>
         </div>
-        <aside class="hero-card">
-          <h2>What you are buying</h2>
-          <p class="small-copy">A hosted API, not a static dataset. Your team gets address autocomplete, full-text resolution, country-aware matching, and a clear path from trial to production.</p>
-          <div class="signal-grid">
-            <div class="signal">
-              <strong>API-first</strong>
-              <span>Autocomplete and resolve endpoints for web, mobile, and backend flows.</span>
+
+        <div class="hero-visual">
+          <div class="demo-window">
+            <div class="demo-window-head">
+              <div class="window-dots"><span></span><span></span><span></span></div>
+              <strong>Checkout Address</strong>
+              <small>Live-style interaction</small>
             </div>
-            <div class="signal">
-              <strong>Usage-based</strong>
-              <span>Pay monthly for included request credits, then overages as you scale.</span>
-            </div>
-            <div class="signal">
-              <strong>Global biasing</strong>
-              <span>Country-aware matching and country-biased autocomplete from one integration.</span>
-            </div>
-            <div class="signal">
-              <strong>Fast evaluation</strong>
-              <span>Sales page and sandbox stay together so buyers can validate behavior immediately.</span>
+            <div class="typed-demo">
+              <div class="product-bar">
+                <div class="product-pill">Autocomplete in progress</div>
+                <div>Country bias: FR</div>
+              </div>
+              <div class="hero-input">
+                <label>Street</label>
+                <div class="typed-line"><span id="animatedQuery"></span><span class="cursor"></span></div>
+              </div>
+              <div class="demo-results" id="animatedResults"></div>
+              <div class="demo-footnote">
+                <span id="animatedStatus">Filtering candidates as the input narrows.</span>
+                <span id="animatedCount">0 matches</span>
+              </div>
             </div>
           </div>
-        </aside>
+        </div>
       </section>
 
-      <div class="stack">
-        <section class="section-card" id="product">
-          <h2>What AddressWise does</h2>
-          <p>Use one service to suggest candidate streets while a user types, then resolve messy free-text or structured inputs into a normalized address record with diagnostics and scoring.</p>
-          <div class="feature-grid">
-            <article class="feature">
-              <strong>Street autocomplete</strong>
-              <p>Session-aware narrowing for fast prefix matching, with optional country bias to keep results relevant in international products.</p>
+      <div class="section-stack">
+        <section class="section" id="product">
+          <div class="section-header">
+            <div>
+              <h2>Built for high-friction address flows</h2>
+              <p>Keep the product story focused: fewer failed deliveries, less manual cleanup, and cleaner customer data from the moment the user starts typing.</p>
+            </div>
+          </div>
+          <div class="cards-3">
+            <article class="card">
+              <strong>Reduce drop-off</strong>
+              <p>Autocomplete shortens the path to completion in checkout, onboarding, marketplace listing, and account setup flows.</p>
             </article>
-            <article class="feature">
-              <strong>Free-text resolution</strong>
-              <p>Accepts messy user input such as postal code, street typo, and house number in one line, then ranks the best candidate.</p>
+            <article class="card">
+              <strong>Improve downstream quality</strong>
+              <p>Resolution turns messy free-text or partially structured input into a normalized address record before it reaches shipping and operations systems.</p>
             </article>
-            <article class="feature">
-              <strong>Structured fallback</strong>
-              <p>Teams that already split fields can send street, house number, city, postal code, and country separately for a stronger match.</p>
+            <article class="card">
+              <strong>Integrate once</strong>
+              <p>One hosted service covers suggestion and resolution behavior so product, frontend, and backend teams do not need separate address handling logic.</p>
             </article>
           </div>
         </section>
 
-        <section class="section-card" id="pricing">
-          <h2>Pricing that maps to API usage</h2>
-          <p>Keep the entry path simple: monthly plans include a request budget, one or more API keys, and overage billing. Large customers move to contract and enterprise support.</p>
-          <div class="pricing-grid">
-            <article class="pricing-card">
-              <div class="plan-kicker">Starter</div>
-              <strong>Evaluate and prototype</strong>
-              <div class="price"><span class="value">EUR 99</span><span>/ month</span></div>
-              <p>Up to 100k requests per month across both endpoints.</p>
-              <ul>
-                <li>2 API keys</li>
-                <li>Basic analytics</li>
-                <li>Email support</li>
-                <li>Overage at EUR 1.20 per extra 1k requests</li>
-              </ul>
+        <section class="section" id="workflow">
+          <div class="section-header">
+            <div>
+              <h2>Simple application flow</h2>
+              <p>AddressWise is designed to sit inside an existing SaaS workflow, not become its own destination product.</p>
+            </div>
+          </div>
+          <div class="workflow">
+            <article class="workflow-step">
+              <strong>Suggest while users type</strong>
+              <p>Call the autocomplete endpoint on the street field and keep suggestions constrained to the current country or market when needed.</p>
             </article>
-            <article class="pricing-card featured">
-              <div class="plan-kicker">Growth</div>
-              <strong>Production for serious volume</strong>
-              <div class="price"><span class="value">EUR 499</span><span>/ month</span></div>
-              <p>Up to 1M requests per month with operational headroom.</p>
-              <ul>
-                <li>10 API keys</li>
-                <li>Priority email support</li>
-                <li>Usage alerts and billing controls</li>
-                <li>Overage at EUR 0.75 per extra 1k requests</li>
-              </ul>
+            <article class="workflow-step">
+              <strong>Resolve on submit</strong>
+              <p>Send the final free-text or structured address to the resolve endpoint and get one best candidate back with a match score.</p>
             </article>
-            <article class="pricing-card">
-              <div class="plan-kicker">Enterprise</div>
-              <strong>Custom deployment and SLAs</strong>
-              <div class="price"><span class="value">Custom</span><span>contract</span></div>
-              <p>For logistics, marketplaces, and large multi-country integrations.</p>
-              <ul>
-                <li>Dedicated support and SLAs</li>
-                <li>Private networking or on-prem options</li>
-                <li>Custom country coverage and refresh cadence</li>
-                <li>Batch cleansing and migration support</li>
-              </ul>
+            <article class="workflow-step">
+              <strong>Store normalized data</strong>
+              <p>Write the returned address record into your systems so fulfillment, support, and analytics all operate on the same shape.</p>
             </article>
           </div>
         </section>
 
-        <section class="section-card" id="billing">
-          <h2>How paying works</h2>
-          <p>The simplest mechanism is API keys plus monthly request credits. Each workspace gets one billing account and one or more keys. Every request burns a credit, and overages are billed automatically at the plan rate.</p>
-          <div class="steps-grid">
-            <article class="step">
-              <strong>1. Create workspace</strong>
-              <p>Your company creates an account, adds a card or invoice billing profile, and picks a monthly plan.</p>
+        <section class="section" id="api">
+          <div class="section-header">
+            <div>
+              <h2>Two endpoints, clear responsibility</h2>
+              <p>One endpoint narrows choices during typing. One endpoint resolves the final input when quality matters.</p>
+            </div>
+          </div>
+          <div class="cards-2">
+            <article class="card">
+              <strong><code>POST /autocomplete</code></strong>
+              <p class="endpoint-copy">Session-aware suggestions for street prefixes with optional country bias. Use it in forms where the user is still composing the address.</p>
             </article>
-            <article class="step">
-              <strong>2. Issue API keys</strong>
-              <p>Create separate keys for production, staging, and sandbox use so you can isolate usage and rotate keys safely.</p>
-            </article>
-            <article class="step">
-              <strong>3. Consume credits</strong>
-              <p>Each call to <code>POST /autocomplete</code> or <code>POST /resolve-address</code> consumes credits and appears in usage analytics.</p>
+            <article class="card">
+              <strong><code>POST /resolve-address</code></strong>
+              <p class="endpoint-copy">Best-match address resolution for messy free text or structured fields. Use it before persisting or executing business logic.</p>
             </article>
           </div>
-          <div class="code-strip">Authorization: Bearer aw_live_xxxxxxxxxxxxx
-
-POST /autocomplete
-POST /resolve-address
-
-Monthly plan includes request credits.
-When credits are exhausted, requests continue and overages are billed automatically.</div>
-        </section>
-
-        <section class="section-card">
-          <h2>What convinces a buyer</h2>
-          <p>Infrastructure products close faster when the value is obvious in a live demo. Keep this page public enough for prospects to test behavior, while the commercial model stays clear and operational.</p>
-          <div class="trust-grid">
-            <article class="trust">
-              <strong>Fewer abandoned forms</strong>
-              <p>Autocomplete reduces friction in checkout and onboarding flows.</p>
-            </article>
-            <article class="trust">
-              <strong>Better delivery quality</strong>
-              <p>Resolution catches messy inputs before they hit downstream shipping systems.</p>
-            </article>
-            <article class="trust">
-              <strong>Clear buying path</strong>
-              <p>Trial on the live page, deploy with keys, upgrade by request volume.</p>
-            </article>
+          <div class="code-panel" style="margin-top: 18px;">
+            <pre>{
+  "autocomplete": {
+    "method": "POST",
+    "path": "/autocomplete",
+    "payload": { "session_id": "checkout-42", "query": "aven", "country_bias": "FR" }
+  },
+  "resolve": {
+    "method": "POST",
+    "path": "/resolve-address",
+    "payload": { "query": "avenue de france 123 stiring wendel 57350 fr" }
+  }
+}</pre>
           </div>
         </section>
 
-        <section class="demo-card" id="demo">
-          <div class="demo-head">
-            <h2>Live product demo</h2>
-            <p>This is the same sales page your prospects can use to validate the product. The forms below call the live API directly, so the marketing story and the technical proof stay in one place.</p>
+        <section class="section" id="live-demo">
+          <div class="section-header">
+            <div>
+              <h2>Live API demo</h2>
+              <p>Use the hosted endpoints directly from this page. The left side shows autocomplete behavior, and the right side resolves a final address candidate.</p>
+            </div>
           </div>
-          <div class="demo-grid">
-            <section class="sandbox">
-              <div class="sandbox-head">
-                <h3>Street autocomplete</h3>
-                <p>Type a street prefix exactly as a user would. Country bias now comes from countries loaded in the database, so buyers can test realistic scope without guessing codes.</p>
-              </div>
-              <div class="controls">
-                <div>
-                  <label for="autocompleteQuery">Street Prefix</label>
+
+          <div class="live-grid">
+            <section class="live-card">
+              <h3>Autocomplete</h3>
+              <p>Type a street prefix the way a user would type it in a real product flow.</p>
+              <div class="field-grid autocomplete-grid">
+                <div class="field">
+                  <label for="autocompleteQuery">Street prefix</label>
                   <input id="autocompleteQuery" autocomplete="off" spellcheck="false" placeholder="aven..." />
                 </div>
-                <div>
-                  <label for="countryBias">Country Bias</label>
+                <div class="field">
+                  <label for="countryBias">Country bias</label>
                   <input id="countryBias" list="countryBiasOptions" autocomplete="off" spellcheck="false" placeholder="FR" />
                   <datalist id="countryBiasOptions"><!-- COUNTRY_BIAS_OPTIONS --></datalist>
                 </div>
-                <div>
+                <div class="field">
                   <label for="sessionId">Session ID</label>
                   <input id="sessionId" autocomplete="off" spellcheck="false" />
                 </div>
               </div>
-              <div class="meta">
-                <div>Resolved query: <strong id="resolvedQuery">-</strong></div>
-                <div>Matches returned: <strong id="matchCount">0</strong></div>
-                <div>Status: <strong id="autocompleteStatus">idle</strong></div>
+              <p class="field-note">Country bias is optional. Session reuse keeps prefix lookups efficient as the input narrows.</p>
+              <div class="live-meta">
+                <div class="meta-chip">Normalized query <strong id="resolvedQuery">-</strong></div>
+                <div class="meta-chip">Matches <strong id="matchCount">0</strong></div>
+                <div class="meta-chip">Status <strong id="autocompleteStatus">idle</strong></div>
               </div>
-              <div class="results" id="autocompleteResults">
-                <div class="empty">Start typing to call <code>POST /autocomplete</code>.</div>
+              <div class="live-results" id="autocompleteResults">
+                <div class="live-empty">Start typing to request live suggestions.</div>
               </div>
             </section>
 
-            <section class="sandbox">
-              <div class="sandbox-head">
-                <h3>Address resolve</h3>
-                <p>Send a free-text query, structured fields, or both. The live response shows the selected address and matching diagnostics so a prospect can judge quality quickly.</p>
-              </div>
-              <div class="controls resolve-controls">
-                <div>
+            <section class="live-card">
+              <h3>Resolve address</h3>
+              <p>Send one free-text query, structured fields, or both. The API returns the best candidate and match diagnostics.</p>
+              <div class="field-grid resolve-grid">
+                <div class="field">
                   <label for="resolveQuery">Query</label>
-                  <input id="resolveQuery" autocomplete="off" spellcheck="false" placeholder="hlava ulica 47 vojany 07672 sk" />
+                  <input id="resolveQuery" autocomplete="off" spellcheck="false" placeholder="avenue de france 123 stiring wendel 57350 fr" />
                 </div>
-                <div>
+                <div class="field">
                   <label for="resolveCountry">Country</label>
-                  <input id="resolveCountry" autocomplete="off" spellcheck="false" placeholder="SK" />
+                  <input id="resolveCountry" autocomplete="off" spellcheck="false" placeholder="FR" />
                 </div>
-                <div>
+                <div class="field">
                   <label for="resolveStreet">Street</label>
-                  <input id="resolveStreet" autocomplete="off" spellcheck="false" placeholder="Hlavna ulica" />
+                  <input id="resolveStreet" autocomplete="off" spellcheck="false" placeholder="Avenue de France" />
                 </div>
-                <div>
-                  <label for="resolveHouseNumber">House Number</label>
-                  <input id="resolveHouseNumber" autocomplete="off" spellcheck="false" placeholder="47" />
+                <div class="field">
+                  <label for="resolveHouseNumber">House number</label>
+                  <input id="resolveHouseNumber" autocomplete="off" spellcheck="false" placeholder="123" />
                 </div>
-                <div>
+                <div class="field">
                   <label for="resolveCity">City</label>
-                  <input id="resolveCity" autocomplete="off" spellcheck="false" placeholder="Vojany" />
+                  <input id="resolveCity" autocomplete="off" spellcheck="false" placeholder="Stiring-Wendel" />
                 </div>
-                <div>
-                  <label for="resolvePostalCode">Postal Code</label>
-                  <input id="resolvePostalCode" autocomplete="off" spellcheck="false" placeholder="07672" />
+                <div class="field">
+                  <label for="resolvePostalCode">Postal code</label>
+                  <input id="resolvePostalCode" autocomplete="off" spellcheck="false" placeholder="57350" />
                 </div>
               </div>
-              <div class="meta">
-                <div>Chosen query: <strong id="resolveResolvedQuery">-</strong></div>
-                <div>Score: <strong id="resolveScore">-</strong></div>
-                <div>Status: <strong id="resolveStatus">idle</strong></div>
+              <div class="resolve-actions">
+                <button id="resolveButton" type="button" class="action action-primary">Resolve Address</button>
               </div>
-              <div class="results" id="resolveResults">
-                <div class="empty">Enter a query or structured address, then click Resolve.</div>
+              <div class="live-meta">
+                <div class="meta-chip">Query used <strong id="resolveResolvedQuery">-</strong></div>
+                <div class="meta-chip">Score <strong id="resolveScore">-</strong></div>
+                <div class="meta-chip">Status <strong id="resolveStatus">idle</strong></div>
               </div>
-              <div class="controls" style="padding-top: 0;">
-                <div>
-                  <button id="resolveButton" type="button" class="action action-primary" style="width: 100%;">Resolve Address</button>
-                </div>
+              <div class="resolve-results" id="resolveResults">
+                <div class="live-empty">Submit an address to inspect the live result.</div>
               </div>
             </section>
           </div>
         </section>
 
-        <section class="footer-cta">
+        <section class="cta-band">
           <div>
-            <strong>Ready to sell this as infrastructure</strong>
-            <p>Keep this page as the public product surface: live demo, pricing, billing model, and technical proof in one place.</p>
+            <strong>Address entry should feel invisible.</strong>
+            <p>Use the live API above to validate the product behavior your buyers will care about: fast suggestions, cleaner final data, and a smoother path through form-heavy workflows.</p>
           </div>
-          <a class="action action-primary" href="#demo">Run the demo</a>
+          <a class="action action-primary" href="#live-demo">Run the demo</a>
         </section>
       </div>
     </section>
   </main>
   <script>
+    const animatedQueryEl = document.getElementById("animatedQuery");
+    const animatedResultsEl = document.getElementById("animatedResults");
+    const animatedStatusEl = document.getElementById("animatedStatus");
+    const animatedCountEl = document.getElementById("animatedCount");
+
     const queryEl = document.getElementById("autocompleteQuery");
     const countryEl = document.getElementById("countryBias");
     const sessionEl = document.getElementById("sessionId");
@@ -878,6 +1095,7 @@ When credits are exhausted, requests continue and overages are billed automatica
     const resolvedQueryEl = document.getElementById("resolvedQuery");
     const matchCountEl = document.getElementById("matchCount");
     const autocompleteStatusEl = document.getElementById("autocompleteStatus");
+
     const resolveQueryEl = document.getElementById("resolveQuery");
     const resolveCountryEl = document.getElementById("resolveCountry");
     const resolveStreetEl = document.getElementById("resolveStreet");
@@ -890,6 +1108,33 @@ When credits are exhausted, requests continue and overages are billed automatica
     const resolveStatusEl = document.getElementById("resolveStatus");
     const resolveResultsEl = document.getElementById("resolveResults");
 
+    const animatedScenarios = [
+      {
+        typed: ["a", "av", "aven", "avenu", "avenue"],
+        status: "Showing the highest-confidence prefixes first.",
+        results: [
+          { street: "Avenue de France", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" },
+          { street: "Avenue Foch", locality: "Paris", country: "FR", formatted: "Avenue Foch, 75116 Paris, FR" },
+          { street: "Avenue Victor Hugo", locality: "Paris", country: "FR", formatted: "Avenue Victor Hugo, 75116 Paris, FR" }
+        ]
+      },
+      {
+        typed: ["avenue d", "avenue de", "avenue de f", "avenue de fr", "avenue de france"],
+        status: "The candidate set narrows as the query becomes specific.",
+        results: [
+          { street: "Avenue de France", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" },
+          { street: "Avenue de France", locality: "Paris", country: "FR", formatted: "Avenue de France, 75013 Paris, FR" }
+        ]
+      },
+      {
+        typed: ["avenue de france 1", "avenue de france 12", "avenue de france 123"],
+        status: "The UI can hand off the final value to address resolution on submit.",
+        results: [
+          { street: "Avenue de France", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" }
+        ]
+      }
+    ];
+
     sessionEl.value = crypto.randomUUID();
 
     let debounceTimer = null;
@@ -899,9 +1144,11 @@ When credits are exhausted, requests continue and overages are billed automatica
     countryEl.addEventListener("input", scheduleFetch);
     sessionEl.addEventListener("change", scheduleFetch);
 
+    startAnimatedDemo();
+
     function scheduleFetch() {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(runFetch, 120);
+      debounceTimer = setTimeout(runFetch, 140);
     }
 
     async function runFetch() {
@@ -911,13 +1158,13 @@ When credits are exhausted, requests continue and overages are billed automatica
       if (!query.trim()) {
         resolvedQueryEl.textContent = "-";
         matchCountEl.textContent = "0";
-        autocompleteStatusEl.textContent = "idle";
-        autocompleteResultsEl.innerHTML = '<div class="empty">Start typing to call <code>POST /autocomplete</code>.</div>';
+        setStatus(autocompleteStatusEl, "idle");
+        autocompleteResultsEl.innerHTML = '<div class="live-empty">Start typing to request live suggestions.</div>';
         return;
       }
 
       const currentRequest = ++requestCounter;
-      autocompleteStatusEl.textContent = "loading";
+      setStatus(autocompleteStatusEl, "loading");
 
       try {
         const response = await fetch("/autocomplete", {
@@ -941,18 +1188,18 @@ When credits are exhausted, requests continue and overages are billed automatica
 
         resolvedQueryEl.textContent = payload.query || "-";
         matchCountEl.textContent = String(payload.suggestions.length);
-        autocompleteStatusEl.textContent = "ok";
+        setStatus(autocompleteStatusEl, "ok");
 
         if (!payload.suggestions.length) {
-          autocompleteResultsEl.innerHTML = '<div class="empty">No suggestions for this prefix.</div>';
+          autocompleteResultsEl.innerHTML = '<div class="live-empty">No suggestions for this prefix.</div>';
           return;
         }
 
         autocompleteResultsEl.innerHTML = payload.suggestions.map((item) => `
-          <article class="result">
+          <article class="live-result">
             <small>${escapeHtml(item.country_code)}${item.locality ? " • " + escapeHtml(item.locality) : ""}</small>
             <strong>${escapeHtml(item.street)}</strong>
-            <div>${escapeHtml(item.formatted)}</div>
+            <div class="detail-value">${escapeHtml(item.formatted)}</div>
           </article>
         `).join("");
       } catch (error) {
@@ -960,7 +1207,7 @@ When credits are exhausted, requests continue and overages are billed automatica
           return;
         }
 
-        autocompleteStatusEl.textContent = "error";
+        setStatus(autocompleteStatusEl, "error");
         autocompleteResultsEl.innerHTML = `<div class="error">${escapeHtml(error.message || "request failed")}</div>`;
       }
     }
@@ -995,13 +1242,13 @@ When credits are exhausted, requests continue and overages are billed automatica
       if (!Object.values(payload).some(Boolean)) {
         resolveResolvedQueryEl.textContent = "-";
         resolveScoreEl.textContent = "-";
-        resolveStatusEl.textContent = "idle";
-        resolveResultsEl.innerHTML = '<div class="empty">Enter a query or structured address, then click Resolve.</div>';
+        setStatus(resolveStatusEl, "idle");
+        resolveResultsEl.innerHTML = '<div class="live-empty">Submit an address to inspect the live result.</div>';
         return;
       }
 
-      resolveStatusEl.textContent = "loading";
-      resolveResultsEl.innerHTML = '<div class="empty">Resolving address...</div>';
+      setStatus(resolveStatusEl, "loading");
+      resolveResultsEl.innerHTML = '<div class="live-empty">Resolving address...</div>';
 
       try {
         const response = await fetch("/resolve-address", {
@@ -1017,10 +1264,10 @@ When credits are exhausted, requests continue and overages are billed automatica
 
         resolveResolvedQueryEl.textContent = body.query || "-";
         resolveScoreEl.textContent = typeof body.score === "number" ? body.score.toFixed(4) : "-";
-        resolveStatusEl.textContent = "ok";
+        setStatus(resolveStatusEl, "ok");
         resolveResultsEl.innerHTML = renderResolveResult(body);
       } catch (error) {
-        resolveStatusEl.textContent = "error";
+        setStatus(resolveStatusEl, "error");
         resolveResultsEl.innerHTML = `<div class="error">${escapeHtml(error.message || "request failed")}</div>`;
       }
     }
@@ -1031,35 +1278,112 @@ When credits are exhausted, requests continue and overages are billed automatica
       const rows = [
         ["Formatted", address.formatted],
         ["Country", address.country_code],
-        ["Admin Area", address.admin_area],
         ["Locality", address.locality],
-        ["Dependent Locality", address.dependent_locality],
+        ["Dependent locality", address.dependent_locality],
         ["Street", address.street],
-        ["House Number", address.house_number],
-        ["House Number Type", address.house_number_type],
+        ["House number", address.house_number],
+        ["House number type", address.house_number_type],
         ["Unit", address.unit],
-        ["Postal Code", address.postal_code],
+        ["Postal code", address.postal_code],
         ["Latitude", address.latitude],
         ["Longitude", address.longitude],
         ["Address ID", address.id],
-        ["Trigram Score", diagnostics.trigram_score],
-        ["Levenshtein Distance", diagnostics.levenshtein_distance]
+        ["Trigram score", diagnostics.trigram_score],
+        ["Levenshtein distance", diagnostics.levenshtein_distance]
       ].filter(([, value]) => value !== null && value !== undefined && String(value) !== "");
 
       return `
-        <article class="result">
-          <strong>${escapeHtml(address.formatted || "Resolved Address")}</strong>
-          <small>${escapeHtml(address.country_code || "-")}${address.locality ? " • " + escapeHtml(address.locality) : ""}</small>
-          <div class="details">
+        <article class="resolved-card">
+          <div>
+            <small>${escapeHtml(address.country_code || "-")}${address.locality ? " • " + escapeHtml(address.locality) : ""}</small>
+            <strong>${escapeHtml(address.formatted || "Resolved address")}</strong>
+          </div>
+          <div class="detail-grid">
             ${rows.map(([label, value]) => `
               <div class="detail-row">
-                <strong>${escapeHtml(label)}</strong>
-                <span>${escapeHtml(value)}</span>
+                <div class="detail-label">${escapeHtml(label)}</div>
+                <div class="detail-value">${escapeHtml(value)}</div>
               </div>
             `).join("")}
           </div>
         </article>
       `;
+    }
+
+    function startAnimatedDemo() {
+      let scenarioIndex = 0;
+
+      runScenario();
+
+      async function runScenario() {
+        const scenario = animatedScenarios[scenarioIndex];
+        scenarioIndex = (scenarioIndex + 1) % animatedScenarios.length;
+
+        for (const value of scenario.typed) {
+          animatedQueryEl.textContent = value;
+          renderAnimatedResults(scenario.results, value);
+          animatedStatusEl.textContent = scenario.status;
+          animatedCountEl.textContent = `${scenario.results.length} ${scenario.results.length === 1 ? "match" : "matches"}`;
+          await sleep(480);
+        }
+
+        await sleep(1500);
+
+        for (let index = scenario.typed[scenario.typed.length - 1].length; index >= 0; index -= 1) {
+          animatedQueryEl.textContent = scenario.typed[scenario.typed.length - 1].slice(0, index);
+          await sleep(45);
+        }
+
+        renderAnimatedResults([], "");
+        animatedStatusEl.textContent = "Filtering candidates as the input narrows.";
+        animatedCountEl.textContent = "0 matches";
+        await sleep(320);
+        runScenario();
+      }
+    }
+
+    function renderAnimatedResults(results, value) {
+      if (!results.length || !value) {
+        animatedResultsEl.innerHTML = "";
+        return;
+      }
+
+      animatedResultsEl.innerHTML = results.map((item, index) => `
+        <article class="demo-result${index === 0 ? " active" : ""}">
+          <small>${escapeHtml(item.country)}${item.locality ? " • " + escapeHtml(item.locality) : ""}</small>
+          <strong>${highlightPrefix(item.street, value)}</strong>
+          <div class="detail-value">${escapeHtml(item.formatted)}</div>
+        </article>
+      `).join("");
+    }
+
+    function highlightPrefix(text, prefix) {
+      const lowerText = text.toLowerCase();
+      const lowerPrefix = prefix.toLowerCase();
+      const start = lowerText.indexOf(lowerPrefix);
+
+      if (start === -1) {
+        return escapeHtml(text);
+      }
+
+      const end = start + prefix.length;
+      return `${escapeHtml(text.slice(0, start))}<span style="color: var(--accent);">${escapeHtml(text.slice(start, end))}</span>${escapeHtml(text.slice(end))}`;
+    }
+
+    function setStatus(element, value) {
+      element.textContent = value;
+      element.className = "";
+      if (value === "ok") {
+        element.classList.add("status-ok");
+      } else if (value === "loading") {
+        element.classList.add("status-loading");
+      } else if (value === "error") {
+        element.classList.add("status-error");
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     function emptyToNull(value) {
