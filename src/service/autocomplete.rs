@@ -17,6 +17,7 @@ const DEFAULT_AUTOCOMPLETE_LIMIT: usize = 10;
 const MAX_AUTOCOMPLETE_LIMIT: usize = 50;
 const DEFAULT_AUTOCOMPLETE_SESSION_TTL: Duration = Duration::from_secs(2 * 60);
 const DEFAULT_AUTOCOMPLETE_MAX_SESSION_COUNT: usize = 200_000;
+const AUTOCOMPLETE_BUILD_BATCH_SIZE: usize = 100_000;
 
 #[derive(Clone)]
 pub(super) struct AutocompleteService {
@@ -113,6 +114,17 @@ struct AutocompleteSession {
     updated_at: Instant,
 }
 
+struct PreparedAutocompleteRow {
+    id: i64,
+    country_code: CountryCode,
+    street: String,
+    street_norm: String,
+    house_norm: String,
+    locality: Option<String>,
+    postal_code: Option<String>,
+    full_address: String,
+}
+
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
 struct CountryCode([u8; 2]);
 
@@ -126,57 +138,24 @@ impl AutocompleteService {
     pub(super) async fn build(repository: &AddressRepository) -> Result<Self, AppError> {
         let mut entries = Vec::new();
         let mut builder = StringPoolBuilder::new();
+        let rayon_threads = rayon::current_num_threads();
 
         let mut stream = repository.stream_autocomplete();
+        let mut batch = Vec::with_capacity(AUTOCOMPLETE_BUILD_BATCH_SIZE);
+        let mut processed_rows = 0usize;
 
         while let Some(row) = stream.next().await {
-            let row = row?;
-            let street = row.thoroughfare.as_deref().unwrap_or("").trim().to_string();
-            if street.is_empty() {
-                continue;
+            batch.push(row?);
+
+            if batch.len() >= AUTOCOMPLETE_BUILD_BATCH_SIZE {
+                processed_rows +=
+                    Self::process_batch(&mut batch, &mut builder, &mut entries, rayon_threads);
             }
+        }
 
-            let street_norm = normalize_text(&street);
-            if street_norm.is_empty() {
-                continue;
-            }
-
-            let full_norm = normalize_text(&row.full_address);
-            let house_norm = if full_norm.starts_with(&street_norm) {
-                full_norm[street_norm.len()..].trim().to_string()
-            } else {
-                String::new()
-            };
-
-            let country_code = match CountryCode::from_country_code(&row.country_code) {
-                Some(cc) => cc,
-                None => continue,
-            };
-
-            let street_idx = builder.intern(street);
-            let street_norm_idx = builder.intern(street_norm);
-            let house_norm_idx = if house_norm.is_empty() {
-                u32::MAX
-            } else {
-                builder.intern(house_norm)
-            };
-            let locality_idx = row.locality.map(|s| builder.intern(s)).unwrap_or(u32::MAX);
-            let postal_idx = row
-                .postal_code
-                .map(|s| builder.intern(s))
-                .unwrap_or(u32::MAX);
-            let formatted_idx = builder.push(row.full_address);
-
-            entries.push(AutocompleteEntry {
-                id: row.id,
-                street_idx,
-                street_norm_idx,
-                house_norm_idx,
-                locality_idx,
-                postal_idx,
-                formatted_idx,
-                country_code,
-            });
+        if !batch.is_empty() {
+            processed_rows +=
+                Self::process_batch(&mut batch, &mut builder, &mut entries, rayon_threads);
         }
 
         // Free interner memory before building pool and sorting
@@ -184,7 +163,12 @@ impl AutocompleteService {
         builder.interner.shrink_to_fit();
 
         let string_pool = builder.build();
-        let rayon_threads = rayon::current_num_threads();
+        tracing::info!(
+            processed_rows,
+            entries = entries.len(),
+            rayon_threads,
+            "finished parallel autocomplete row preparation"
+        );
 
         tracing::info!(
             entries = entries.len(),
@@ -244,6 +228,93 @@ impl AutocompleteService {
                 "AUTOCOMPLETE_MAX_SESSION_COUNT",
                 DEFAULT_AUTOCOMPLETE_MAX_SESSION_COUNT,
             ),
+        })
+    }
+
+    fn process_batch(
+        batch: &mut Vec<crate::repository::AutocompleteAddressRecord>,
+        builder: &mut StringPoolBuilder,
+        entries: &mut Vec<AutocompleteEntry>,
+        rayon_threads: usize,
+    ) -> usize {
+        let input_rows = batch.len();
+        tracing::info!(
+            rows = input_rows,
+            rayon_threads,
+            "preparing autocomplete batch in parallel"
+        );
+
+        let prepared_rows = batch
+            .drain(..)
+            .collect::<Vec<_>>()
+            .into_par_iter()
+            .filter_map(Self::prepare_row)
+            .collect::<Vec<_>>();
+
+        let prepared_count = prepared_rows.len();
+        entries.reserve(prepared_count);
+
+        for row in prepared_rows {
+            let street_idx = builder.intern(row.street);
+            let street_norm_idx = builder.intern(row.street_norm);
+            let house_norm_idx = if row.house_norm.is_empty() {
+                u32::MAX
+            } else {
+                builder.intern(row.house_norm)
+            };
+            let locality_idx = row.locality.map(|s| builder.intern(s)).unwrap_or(u32::MAX);
+            let postal_idx = row
+                .postal_code
+                .map(|s| builder.intern(s))
+                .unwrap_or(u32::MAX);
+            let formatted_idx = builder.push(row.full_address);
+
+            entries.push(AutocompleteEntry {
+                id: row.id,
+                street_idx,
+                street_norm_idx,
+                house_norm_idx,
+                locality_idx,
+                postal_idx,
+                formatted_idx,
+                country_code: row.country_code,
+            });
+        }
+
+        prepared_count
+    }
+
+    fn prepare_row(
+        row: crate::repository::AutocompleteAddressRecord,
+    ) -> Option<PreparedAutocompleteRow> {
+        let street = row.thoroughfare?.trim().to_string();
+        if street.is_empty() {
+            return None;
+        }
+
+        let street_norm = normalize_text(&street);
+        if street_norm.is_empty() {
+            return None;
+        }
+
+        let full_norm = normalize_text(&row.full_address);
+        let house_norm = if full_norm.starts_with(&street_norm) {
+            full_norm[street_norm.len()..].trim().to_string()
+        } else {
+            String::new()
+        };
+
+        let country_code = CountryCode::from_country_code(&row.country_code)?;
+
+        Some(PreparedAutocompleteRow {
+            id: row.id,
+            country_code,
+            street,
+            street_norm,
+            house_norm,
+            locality: row.locality,
+            postal_code: row.postal_code,
+            full_address: row.full_address,
         })
     }
 
