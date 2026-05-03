@@ -617,11 +617,61 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
     }
 
     .field-grid.autocomplete-grid {
-      grid-template-columns: minmax(0, 1.4fr) 170px 190px;
+      grid-template-columns: minmax(0, 1.45fr) 210px;
     }
 
     .field-grid.resolve-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .card-head,
+    .split-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card-head > div:first-child p,
+    .split-head > div:first-child p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .aside-note,
+    .resolve-mode {
+      padding: 14px 16px;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(245, 249, 255, 0.92);
+      color: var(--muted);
+    }
+
+    .aside-note {
+      min-width: 220px;
+    }
+
+    .aside-note strong,
+    .resolve-mode strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink);
+      font-size: 0.95rem;
+    }
+
+    .optional-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-strong);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
     }
 
     .field input {
@@ -645,6 +695,35 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
     .field-note {
       margin-top: 10px;
       font-size: 0.92rem;
+    }
+
+    .resolve-split {
+      display: grid;
+      gap: 16px;
+    }
+
+    .resolve-mode {
+      display: grid;
+      gap: 14px;
+    }
+
+    .resolve-divider {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      color: var(--soft);
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .resolve-divider::before,
+    .resolve-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--line);
     }
 
     .live-meta {
@@ -758,6 +837,40 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
       line-height: 1.7;
     }
 
+    .process-grid,
+    .legal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .process-step,
+    .legal-card {
+      padding: 22px;
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 251, 255, 0.9));
+    }
+
+    .process-step strong,
+    .legal-card strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 1.02rem;
+    }
+
+    .process-step p,
+    .legal-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .legal-copy {
+      display: grid;
+      gap: 16px;
+    }
+
     .status-ok { color: var(--success); }
     .status-loading { color: var(--accent); }
     .status-error { color: #b24040; }
@@ -789,6 +902,8 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
       .field-grid.autocomplete-grid,
       .field-grid.resolve-grid,
       .cards-2,
+      .process-grid,
+      .legal-grid,
       .hero-metrics,
       .cta-band,
       .section-header {
@@ -797,6 +912,11 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 
       .section-header,
       .cta-band {
+        display: grid;
+      }
+
+      .card-head,
+      .split-head {
         display: grid;
       }
 
@@ -856,6 +976,9 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
           <a href="#workflow">Workflow</a>
           <a href="#api">API</a>
           <a href="#live-demo">Live Demo</a>
+          <a href="#access">Access</a>
+          <a href="#about">About</a>
+          <a href="#legal">Legal</a>
         </nav>
       </header>
 
@@ -894,7 +1017,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
             <div class="typed-demo">
               <div class="product-bar">
                 <div class="product-pill">Autocomplete in progress</div>
-                <div>Country bias: FR</div>
+                <div>Country bias optional: FR</div>
               </div>
               <div class="hero-input">
                 <label>Street</label>
@@ -967,7 +1090,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
           <div class="cards-2">
             <article class="card">
               <strong><code>POST /autocomplete</code></strong>
-              <p class="endpoint-copy">Session-aware suggestions for street prefixes with optional country bias. Use it in forms where the user is still composing the address.</p>
+              <p class="endpoint-copy">Suggestions for addresses that begin with the street, with optional country bias. Use it in forms where the user is still composing the address.</p>
             </article>
             <article class="card">
               <strong><code>POST /resolve-address</code></strong>
@@ -979,7 +1102,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
   "autocomplete": {
     "method": "POST",
     "path": "/autocomplete",
-    "payload": { "session_id": "checkout-42", "query": "aven", "country_bias": "FR" }
+    "payload": { "query": "aven", "country_bias": "FR" }
   },
   "resolve": {
     "method": "POST",
@@ -1000,24 +1123,28 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 
           <div class="live-grid">
             <section class="live-card">
-              <h3>Autocomplete</h3>
-              <p>Type a street prefix the way a user would type it in a real product flow.</p>
+              <div class="card-head">
+                <div>
+                  <h3>Autocomplete</h3>
+                  <p>Start with the street name, as a user would in a real address form.</p>
+                </div>
+                <div class="aside-note">
+                  <strong>Country bias <span class="optional-badge">Optional</span></strong>
+                  <span>Add a country only when you want suggestions nudged toward one market.</span>
+                </div>
+              </div>
               <div class="field-grid autocomplete-grid">
                 <div class="field">
-                  <label for="autocompleteQuery">Street prefix</label>
-                  <input id="autocompleteQuery" autocomplete="off" spellcheck="false" placeholder="aven..." />
+                  <label for="autocompleteQuery">Address (start with street)</label>
+                  <input id="autocompleteQuery" autocomplete="off" spellcheck="false" placeholder="avenue de france..." />
                 </div>
                 <div class="field">
                   <label for="countryBias">Country bias</label>
                   <input id="countryBias" list="countryBiasOptions" autocomplete="off" spellcheck="false" placeholder="FR" />
                   <datalist id="countryBiasOptions"><!-- COUNTRY_BIAS_OPTIONS --></datalist>
                 </div>
-                <div class="field">
-                  <label for="sessionId">Session ID</label>
-                  <input id="sessionId" autocomplete="off" spellcheck="false" />
-                </div>
               </div>
-              <p class="field-note">Country bias is optional. Session reuse keeps prefix lookups efficient as the input narrows.</p>
+              <p class="field-note">This demo keeps the autocomplete session internal so the form stays focused on buyer-facing inputs.</p>
               <div class="live-meta">
                 <div class="meta-chip">Normalized query <strong id="resolvedQuery">-</strong></div>
                 <div class="meta-chip">Matches <strong id="matchCount">0</strong></div>
@@ -1029,39 +1156,63 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
             </section>
 
             <section class="live-card">
-              <h3>Resolve address</h3>
-              <p>Send one free-text query, structured fields, or both. The API returns the best candidate and match diagnostics.</p>
-              <div class="field-grid resolve-grid">
-                <div class="field">
-                  <label for="resolveQuery">Query</label>
-                  <input id="resolveQuery" autocomplete="off" spellcheck="false" placeholder="avenue de france 123 stiring wendel 57350 fr" />
-                </div>
-                <div class="field">
-                  <label for="resolveCountry">Country</label>
-                  <input id="resolveCountry" autocomplete="off" spellcheck="false" placeholder="FR" />
-                </div>
-                <div class="field">
-                  <label for="resolveStreet">Street</label>
-                  <input id="resolveStreet" autocomplete="off" spellcheck="false" placeholder="Avenue de France" />
-                </div>
-                <div class="field">
-                  <label for="resolveHouseNumber">House number</label>
-                  <input id="resolveHouseNumber" autocomplete="off" spellcheck="false" placeholder="123" />
-                </div>
-                <div class="field">
-                  <label for="resolveCity">City</label>
-                  <input id="resolveCity" autocomplete="off" spellcheck="false" placeholder="Stiring-Wendel" />
-                </div>
-                <div class="field">
-                  <label for="resolvePostalCode">Postal code</label>
-                  <input id="resolvePostalCode" autocomplete="off" spellcheck="false" placeholder="57350" />
+              <div class="split-head">
+                <div>
+                  <h3>Resolve address</h3>
+                  <p>Choose one input path. Use the single Query field for raw address text, or use the structured fields if your form already collects them separately.</p>
                 </div>
               </div>
-              <div class="resolve-actions">
-                <button id="resolveButton" type="button" class="action action-primary">Resolve Address</button>
+              <div class="resolve-split">
+                <section class="resolve-mode">
+                  <div>
+                    <strong>Option A: Query</strong>
+                    <p>Paste or type one complete address line.</p>
+                  </div>
+                  <div class="field">
+                    <label for="resolveQuery">Query</label>
+                    <input id="resolveQuery" autocomplete="off" spellcheck="false" placeholder="avenue de france 123 stiring wendel 57350 fr" />
+                  </div>
+                  <div class="resolve-actions">
+                    <button id="resolveQueryButton" type="button" class="action action-primary">Resolve from query</button>
+                  </div>
+                </section>
+
+                <div class="resolve-divider">or</div>
+
+                <section class="resolve-mode">
+                  <div>
+                    <strong>Option B: Individual fields</strong>
+                    <p>Use this path when your product captures address parts separately.</p>
+                  </div>
+                  <div class="field-grid resolve-grid">
+                    <div class="field">
+                      <label for="resolveCountry">Country</label>
+                      <input id="resolveCountry" autocomplete="off" spellcheck="false" placeholder="FR" />
+                    </div>
+                    <div class="field">
+                      <label for="resolveStreet">Street</label>
+                      <input id="resolveStreet" autocomplete="off" spellcheck="false" placeholder="Avenue de France" />
+                    </div>
+                    <div class="field">
+                      <label for="resolveHouseNumber">House number</label>
+                      <input id="resolveHouseNumber" autocomplete="off" spellcheck="false" placeholder="123" />
+                    </div>
+                    <div class="field">
+                      <label for="resolveCity">City</label>
+                      <input id="resolveCity" autocomplete="off" spellcheck="false" placeholder="Stiring-Wendel" />
+                    </div>
+                    <div class="field">
+                      <label for="resolvePostalCode">Postal code</label>
+                      <input id="resolvePostalCode" autocomplete="off" spellcheck="false" placeholder="57350" />
+                    </div>
+                  </div>
+                  <div class="resolve-actions">
+                    <button id="resolveStructuredButton" type="button" class="action action-primary">Resolve from fields</button>
+                  </div>
+                </section>
               </div>
               <div class="live-meta">
-                <div class="meta-chip">Query used <strong id="resolveResolvedQuery">-</strong></div>
+                <div class="meta-chip">Normalized input <strong id="resolveResolvedQuery">-</strong></div>
                 <div class="meta-chip">Score <strong id="resolveScore">-</strong></div>
                 <div class="meta-chip">Status <strong id="resolveStatus">idle</strong></div>
               </div>
@@ -1069,6 +1220,83 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
                 <div class="live-empty">Submit an address to inspect the live result.</div>
               </div>
             </section>
+          </div>
+        </section>
+
+        <section class="section" id="access">
+          <div class="section-header">
+            <div>
+              <h2>Login and registration process</h2>
+              <p>Example buyer access flow for a European B2B SaaS product. This is placeholder content and can be replaced with production policy and operations details later.</p>
+            </div>
+          </div>
+          <div class="process-grid">
+            <article class="process-step">
+              <strong>1. Company registration</strong>
+              <p>A prospective customer creates a workspace with company name, business email, billing country, and an administrator account. The administrator confirms that they are authorized to act for the business customer.</p>
+            </article>
+            <article class="process-step">
+              <strong>2. Email verification and review</strong>
+              <p>The administrator verifies the email address. AddressWise may delay activation until basic anti-fraud and sanctions screening is complete and may reject registrations that are incomplete, inaccurate, or high risk.</p>
+            </article>
+            <article class="process-step">
+              <strong>3. Team access and authentication</strong>
+              <p>Once approved, the administrator can invite team members, assign roles, and rotate API credentials. Each user is responsible for keeping login details confidential and for activity performed under their account.</p>
+            </article>
+            <article class="process-step">
+              <strong>4. Suspension and termination</strong>
+              <p>Access may be suspended for misuse, unpaid fees, security incidents, or suspected unlawful use. Customers may close the workspace subject to contractual notice periods, retention duties, and unpaid invoices.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="about">
+          <div class="section-header">
+            <div>
+              <h2>About us</h2>
+              <p>Dummy company profile for the demo page. Replace these details with the actual company record, support contacts, and operating history.</p>
+            </div>
+          </div>
+          <div class="cards-2">
+            <article class="card">
+              <strong>Who we are</strong>
+              <p>AddressWise Labs Europe S.à r.l. is presented here as a fictional Luxembourg-based software company focused on address quality APIs for commerce, logistics, marketplaces, and CRM platforms across the European Union.</p>
+            </article>
+            <article class="card">
+              <strong>How we work</strong>
+              <p>Our dummy team combines geodata operations, search infrastructure, and product design. We position the product as API-first infrastructure that fits into buyer journeys instead of forcing end users into a separate portal.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="section" id="legal">
+          <div class="section-header">
+            <div>
+              <h2>Legal</h2>
+              <p>Draft placeholder language for a hosted address service offered to EU business customers. This is product copy, not legal advice.</p>
+            </div>
+          </div>
+          <div class="legal-copy">
+            <div class="legal-grid">
+              <article class="legal-card">
+                <strong>Address result disclaimer</strong>
+                <p>AddressWise provides probabilistic suggestions and best-match results based on the data available at the time of the request. Customers remain responsible for verifying critical addresses before shipment, service dispatch, identity checks, tax decisions, or regulatory filings. AddressWise is not liable for losses caused solely by customer reliance on an incorrect or incomplete address result where independent verification would reasonably be expected.</p>
+              </article>
+              <article class="legal-card">
+                <strong>Service scope</strong>
+                <p>The service is intended for lawful business use within professional workflows. It does not guarantee that every real-world address exists, is deliverable, or is suitable for legal service, credit decisions, or public-sector registers.</p>
+              </article>
+            </div>
+            <div class="legal-grid">
+              <article class="legal-card">
+                <strong>Core terms and conditions</strong>
+                <p>These demo terms assume a business-to-business contract governed by the law of an EU member state, with mandatory consumer rules excluded because the service is not offered to consumers. Customers must provide accurate account information, use the API in compliance with applicable law including GDPR, and avoid abusive traffic, reverse engineering of protected components, and unlawful enrichment of third-party datasets.</p>
+              </article>
+              <article class="legal-card">
+                <strong>Availability, liability, and disputes</strong>
+                <p>Availability commitments, support response times, data processing terms, and security measures should be set in the order form or DPA. Liability should be limited to foreseeable direct damages and capped to fees paid in an agreed reference period, except where liability cannot be limited under applicable EU law, including fraud, willful misconduct, death, or personal injury. Commercial disputes should first go through good-faith escalation before the courts or arbitral forum named in the contract.</p>
+              </article>
+            </div>
           </div>
         </section>
 
@@ -1090,7 +1318,6 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 
     const queryEl = document.getElementById("autocompleteQuery");
     const countryEl = document.getElementById("countryBias");
-    const sessionEl = document.getElementById("sessionId");
     const autocompleteResultsEl = document.getElementById("autocompleteResults");
     const resolvedQueryEl = document.getElementById("resolvedQuery");
     const matchCountEl = document.getElementById("matchCount");
@@ -1102,11 +1329,13 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
     const resolveHouseNumberEl = document.getElementById("resolveHouseNumber");
     const resolveCityEl = document.getElementById("resolveCity");
     const resolvePostalCodeEl = document.getElementById("resolvePostalCode");
-    const resolveButtonEl = document.getElementById("resolveButton");
+    const resolveQueryButtonEl = document.getElementById("resolveQueryButton");
+    const resolveStructuredButtonEl = document.getElementById("resolveStructuredButton");
     const resolveResolvedQueryEl = document.getElementById("resolveResolvedQuery");
     const resolveScoreEl = document.getElementById("resolveScore");
     const resolveStatusEl = document.getElementById("resolveStatus");
     const resolveResultsEl = document.getElementById("resolveResults");
+    const sessionId = crypto.randomUUID();
 
     const animatedScenarios = [
       {
@@ -1135,14 +1364,11 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
       }
     ];
 
-    sessionEl.value = crypto.randomUUID();
-
     let debounceTimer = null;
     let requestCounter = 0;
 
     queryEl.addEventListener("input", scheduleFetch);
     countryEl.addEventListener("input", scheduleFetch);
-    sessionEl.addEventListener("change", scheduleFetch);
 
     startAnimatedDemo();
 
@@ -1171,7 +1397,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
-            session_id: sessionEl.value.trim(),
+            session_id: sessionId,
             query,
             country_bias: countryBias || null
           })
@@ -1212,9 +1438,17 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
       }
     }
 
-    resolveButtonEl.addEventListener("click", runResolveFetch);
+    resolveQueryButtonEl.addEventListener("click", () => runResolveFetch("query"));
+    resolveStructuredButtonEl.addEventListener("click", () => runResolveFetch("structured"));
+
+    resolveQueryEl.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        runResolveFetch("query");
+      }
+    });
+
     [
-      resolveQueryEl,
       resolveCountryEl,
       resolveStreetEl,
       resolveHouseNumberEl,
@@ -1224,26 +1458,27 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
       el.addEventListener("keydown", (event) => {
         if (event.key === "Enter") {
           event.preventDefault();
-          runResolveFetch();
+          runResolveFetch("structured");
         }
       });
     });
 
-    async function runResolveFetch() {
-      const payload = {
-        query: emptyToNull(resolveQueryEl.value),
-        street: emptyToNull(resolveStreetEl.value),
-        house_number: emptyToNull(resolveHouseNumberEl.value),
-        city: emptyToNull(resolveCityEl.value),
-        postal_code: emptyToNull(resolvePostalCodeEl.value),
-        country: emptyToNull(resolveCountryEl.value)
-      };
+    async function runResolveFetch(mode) {
+      const payload = mode === "query"
+        ? { query: emptyToNull(resolveQueryEl.value) }
+        : {
+            street: emptyToNull(resolveStreetEl.value),
+            house_number: emptyToNull(resolveHouseNumberEl.value),
+            city: emptyToNull(resolveCityEl.value),
+            postal_code: emptyToNull(resolvePostalCodeEl.value),
+            country: emptyToNull(resolveCountryEl.value)
+          };
 
       if (!Object.values(payload).some(Boolean)) {
         resolveResolvedQueryEl.textContent = "-";
         resolveScoreEl.textContent = "-";
         setStatus(resolveStatusEl, "idle");
-        resolveResultsEl.innerHTML = '<div class="live-empty">Submit an address to inspect the live result.</div>';
+        resolveResultsEl.innerHTML = `<div class="live-empty">${mode === "query" ? "Enter a query to inspect the live result." : "Fill in at least one structured field to inspect the live result."}</div>`;
         return;
       }
 
