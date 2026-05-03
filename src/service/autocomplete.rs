@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use futures::StreamExt;
+use rayon::prelude::*;
 use tokio::sync::RwLock;
 
 use crate::error::AppError;
@@ -183,11 +184,22 @@ impl AutocompleteService {
         builder.interner.shrink_to_fit();
 
         let string_pool = builder.build();
+        let rayon_threads = rayon::current_num_threads();
 
-        entries.sort_by(|a, b| a.cmp_global(b, &string_pool));
+        tracing::info!(
+            entries = entries.len(),
+            rayon_threads,
+            "sorting autocomplete entries in parallel"
+        );
+        entries.par_sort_unstable_by(|a, b| a.cmp_global(b, &string_pool));
 
         let mut country_order: Vec<u32> = (0..entries.len() as u32).collect();
-        country_order.sort_by(|left, right| {
+        tracing::info!(
+            entries = country_order.len(),
+            rayon_threads,
+            "sorting country-scoped autocomplete order in parallel"
+        );
+        country_order.par_sort_unstable_by(|left, right| {
             AutocompleteEntry::cmp_country(
                 &entries[*left as usize],
                 &entries[*right as usize],

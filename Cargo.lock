@@ -20,6 +20,7 @@ dependencies = [
  "dotenvy",
  "futures",
  "ntex",
+ "rayon",
  "serde",
  "serde_json",
  "sqlx",
