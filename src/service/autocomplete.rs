@@ -136,8 +136,7 @@ enum SearchScope {
 
 impl AutocompleteService {
     pub(super) async fn build(repository: &AddressRepository) -> Result<Self, AppError> {
-        let mut entries = Vec::new();
-        let mut builder = StringPoolBuilder::new();
+        let mut prepared_rows = Vec::new();
         let rayon_threads = rayon::current_num_threads();
 
         let mut stream = repository.stream_autocomplete();
@@ -149,45 +148,37 @@ impl AutocompleteService {
 
             if batch.len() >= AUTOCOMPLETE_BUILD_BATCH_SIZE {
                 processed_rows +=
-                    Self::process_batch(&mut batch, &mut builder, &mut entries, rayon_threads);
+                    Self::process_batch(&mut batch, &mut prepared_rows, rayon_threads);
             }
         }
 
         if !batch.is_empty() {
-            processed_rows +=
-                Self::process_batch(&mut batch, &mut builder, &mut entries, rayon_threads);
+            processed_rows += Self::process_batch(&mut batch, &mut prepared_rows, rayon_threads);
         }
-
-        // Free interner memory before building pool and sorting
-        builder.interner.clear();
-        builder.interner.shrink_to_fit();
-
-        let string_pool = builder.build();
         tracing::info!(
             processed_rows,
-            entries = entries.len(),
+            entries = prepared_rows.len(),
             rayon_threads,
             "finished parallel autocomplete row preparation"
         );
 
         tracing::info!(
-            entries = entries.len(),
+            entries = prepared_rows.len(),
             rayon_threads,
             "sorting autocomplete entries in parallel"
         );
-        entries.par_sort_unstable_by(|a, b| a.cmp_global(b, &string_pool));
+        prepared_rows.par_sort_unstable_by(PreparedAutocompleteRow::cmp_global);
 
-        let mut country_order: Vec<u32> = (0..entries.len() as u32).collect();
+        let mut country_order: Vec<u32> = (0..prepared_rows.len() as u32).collect();
         tracing::info!(
             entries = country_order.len(),
             rayon_threads,
             "sorting country-scoped autocomplete order in parallel"
         );
         country_order.par_sort_unstable_by(|left, right| {
-            AutocompleteEntry::cmp_country(
-                &entries[*left as usize],
-                &entries[*right as usize],
-                &string_pool,
+            PreparedAutocompleteRow::cmp_country(
+                &prepared_rows[*left as usize],
+                &prepared_rows[*right as usize],
             )
         });
 
@@ -195,10 +186,10 @@ impl AutocompleteService {
         let mut country_codes = Vec::new();
         let mut start = 0;
         while start < country_order.len() {
-            let country = entries[country_order[start] as usize].country_code;
+            let country = prepared_rows[country_order[start] as usize].country_code;
             let mut end = start + 1;
             while end < country_order.len()
-                && entries[country_order[end] as usize].country_code == country
+                && prepared_rows[country_order[end] as usize].country_code == country
             {
                 end += 1;
             }
@@ -206,6 +197,8 @@ impl AutocompleteService {
             country_codes.push(country);
             start = end;
         }
+
+        let (entries, string_pool) = Self::encode_prepared_rows(prepared_rows);
 
         tracing::info!(
             entries = entries.len(),
@@ -233,8 +226,7 @@ impl AutocompleteService {
 
     fn process_batch(
         batch: &mut Vec<crate::repository::AutocompleteAddressRecord>,
-        builder: &mut StringPoolBuilder,
-        entries: &mut Vec<AutocompleteEntry>,
+        prepared_rows: &mut Vec<PreparedAutocompleteRow>,
         rayon_threads: usize,
     ) -> usize {
         let input_rows = batch.len();
@@ -244,42 +236,16 @@ impl AutocompleteService {
             "preparing autocomplete batch in parallel"
         );
 
-        let prepared_rows = batch
+        let prepared = batch
             .drain(..)
             .collect::<Vec<_>>()
             .into_par_iter()
             .filter_map(Self::prepare_row)
             .collect::<Vec<_>>();
 
-        let prepared_count = prepared_rows.len();
-        entries.reserve(prepared_count);
-
-        for row in prepared_rows {
-            let street_idx = builder.intern(row.street);
-            let street_norm_idx = builder.intern(row.street_norm);
-            let house_norm_idx = if row.house_norm.is_empty() {
-                u32::MAX
-            } else {
-                builder.intern(row.house_norm)
-            };
-            let locality_idx = row.locality.map(|s| builder.intern(s)).unwrap_or(u32::MAX);
-            let postal_idx = row
-                .postal_code
-                .map(|s| builder.intern(s))
-                .unwrap_or(u32::MAX);
-            let formatted_idx = builder.push(row.full_address);
-
-            entries.push(AutocompleteEntry {
-                id: row.id,
-                street_idx,
-                street_norm_idx,
-                house_norm_idx,
-                locality_idx,
-                postal_idx,
-                formatted_idx,
-                country_code: row.country_code,
-            });
-        }
+        let prepared_count = prepared.len();
+        prepared_rows.reserve(prepared_count);
+        prepared_rows.extend(prepared);
 
         prepared_count
     }
@@ -316,6 +282,45 @@ impl AutocompleteService {
             postal_code: row.postal_code,
             full_address: row.full_address,
         })
+    }
+
+    fn encode_prepared_rows(
+        prepared_rows: Vec<PreparedAutocompleteRow>,
+    ) -> (Vec<AutocompleteEntry>, StringPool) {
+        let mut builder = StringPoolBuilder::new();
+        let mut entries = Vec::with_capacity(prepared_rows.len());
+
+        for row in prepared_rows {
+            let street_idx = builder.intern(row.street);
+            let street_norm_idx = builder.intern(row.street_norm);
+            let house_norm_idx = if row.house_norm.is_empty() {
+                u32::MAX
+            } else {
+                builder.intern(row.house_norm)
+            };
+            let locality_idx = row.locality.map(|s| builder.intern(s)).unwrap_or(u32::MAX);
+            let postal_idx = row
+                .postal_code
+                .map(|s| builder.intern(s))
+                .unwrap_or(u32::MAX);
+            let formatted_idx = builder.push(row.full_address);
+
+            entries.push(AutocompleteEntry {
+                id: row.id,
+                street_idx,
+                street_norm_idx,
+                house_norm_idx,
+                locality_idx,
+                postal_idx,
+                formatted_idx,
+                country_code: row.country_code,
+            });
+        }
+
+        builder.interner.clear();
+        builder.interner.shrink_to_fit();
+
+        (entries, builder.build())
     }
 
     pub(super) async fn complete(
@@ -557,7 +562,25 @@ fn compare_target(street: &str, house: &str, query: &str) -> Ordering {
     }
 }
 
+impl PreparedAutocompleteRow {
+    fn cmp_global(&self, other: &Self) -> Ordering {
+        self.street_norm
+            .cmp(&other.street_norm)
+            .then_with(|| self.house_norm.cmp(&other.house_norm))
+            .then_with(|| self.country_code.cmp(&other.country_code))
+            .then_with(|| self.full_address.cmp(&other.full_address))
+            .then_with(|| self.id.cmp(&other.id))
+    }
+
+    fn cmp_country(left: &Self, right: &Self) -> Ordering {
+        left.country_code
+            .cmp(&right.country_code)
+            .then_with(|| left.cmp_global(right))
+    }
+}
+
 impl AutocompleteEntry {
+    #[cfg(test)]
     fn cmp_global(&self, other: &Self, pool: &StringPool) -> Ordering {
         pool.get(self.street_norm_idx)
             .cmp(pool.get(other.street_norm_idx))
@@ -573,6 +596,7 @@ impl AutocompleteEntry {
             .then_with(|| self.id.cmp(&other.id))
     }
 
+    #[cfg(test)]
     fn cmp_country(left: &Self, right: &Self, pool: &StringPool) -> Ordering {
         left.country_code
             .cmp(&right.country_code)
