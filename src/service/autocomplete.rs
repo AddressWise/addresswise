@@ -47,7 +47,7 @@ struct AutocompleteEntry {
 
 struct StringPool {
     data: Box<[u8]>,
-    offsets: Box<[u32]>,
+    offsets: Box<[usize]>,
 }
 
 impl StringPool {
@@ -64,7 +64,7 @@ impl StringPool {
 
 struct StringPoolBuilder {
     data: Vec<u8>,
-    offsets: Vec<u32>,
+    offsets: Vec<usize>,
     interner: HashMap<Box<str>, u32>,
 }
 
@@ -82,7 +82,7 @@ impl StringPoolBuilder {
             idx
         } else {
             let idx = self.offsets.len() as u32;
-            self.offsets.push(self.data.len() as u32);
+            self.offsets.push(self.data.len());
             self.data.extend_from_slice(s.as_bytes());
             self.interner.insert(s.into_boxed_str(), idx);
             idx
@@ -91,13 +91,13 @@ impl StringPoolBuilder {
 
     fn push(&mut self, s: String) -> u32 {
         let idx = self.offsets.len() as u32;
-        self.offsets.push(self.data.len() as u32);
+        self.offsets.push(self.data.len());
         self.data.extend_from_slice(s.as_bytes());
         idx
     }
 
     fn build(mut self) -> StringPool {
-        self.offsets.push(self.data.len() as u32);
+        self.offsets.push(self.data.len());
         StringPool {
             data: self.data.into_boxed_slice(),
             offsets: self.offsets.into_boxed_slice(),
