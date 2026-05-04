@@ -1,5 +1,5 @@
 [Unit]
-Description=address_wise_4 API service
+Description=address_wise API service
 After=network-online.target
 Wants=network-online.target
 
@@ -7,9 +7,9 @@ Wants=network-online.target
 Type=simple
 User=addresswise
 Group=addresswise
-WorkingDirectory=/opt/address_wise_4/repo
-EnvironmentFile=/etc/address_wise_4.env
-ExecStart=/opt/address_wise_4/repo/target/release/address_wise_4
+WorkingDirectory=/opt/address_wise
+EnvironmentFile=/etc/address_wise.env
+ExecStart=/opt/address_wise/target/release/address_wise
 Restart=always
 RestartSec=5
 TimeoutStartSec=0

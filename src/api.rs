@@ -974,6 +974,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
         <nav class="topnav">
           <a href="#product">Product</a>
           <a href="#workflow">Workflow</a>
+          <a href="#integration">Integration</a>
           <a href="#api">API</a>
           <a href="#live-demo">Live Demo</a>
           <a href="#access">Access</a>
@@ -1014,10 +1015,10 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
               <strong>Checkout Address</strong>
               <small>Live-style interaction</small>
             </div>
-            <div class="typed-demo">
+              <div class="typed-demo">
               <div class="product-bar">
                 <div class="product-pill">Autocomplete in progress</div>
-                <div>Country bias optional: FR</div>
+                <div id="animatedCountryBias">Country bias optional</div>
               </div>
               <div class="hero-input">
                 <label>Street</label>
@@ -1077,6 +1078,42 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
               <strong>Store normalized data</strong>
               <p>Write the returned address record into your systems so fulfillment, support, and analytics all operate on the same shape.</p>
             </article>
+          </div>
+        </section>
+
+        <section class="section" id="integration">
+          <div class="section-header">
+            <div>
+              <h2>Easy to deploy inside customer apps</h2>
+              <p>The cleanest rollout is a hosted JavaScript loader. Customers should be able to import one script, map their fields once, and let AddressWise handle autocomplete, session tracking, and resolve-on-submit behavior.</p>
+            </div>
+          </div>
+          <div class="cards-2">
+            <article class="card">
+              <strong>Recommended embed shape</strong>
+              <p>One script tag or module import, one configuration object, and no need for each customer team to rebuild address UX from scratch.</p>
+            </article>
+            <article class="card">
+              <strong>Explicit integration contract</strong>
+              <p>Production integrations should still understand the moving parts: which fields map to street, city, postal code, and country, how <code>session_id</code> is generated, and how a token is supplied.</p>
+            </article>
+          </div>
+          <div class="code-panel" style="margin-top: 18px;">
+            <pre>&lt;script type="module"&gt;
+  import { mountAddressWise } from "https://cdn.addresswise.eu/sdk.js";
+
+  mountAddressWise({
+    token: "customer-public-token",
+    form: "#checkout-address",
+    fields: {
+      street: "#street",
+      houseNumber: "#house-number",
+      city: "#city",
+      postalCode: "#postal-code",
+      country: "#country"
+    }
+  });
+&lt;/script&gt;</pre>
           </div>
         </section>
 
@@ -1144,7 +1181,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
                   <datalist id="countryBiasOptions"><!-- COUNTRY_BIAS_OPTIONS --></datalist>
                 </div>
               </div>
-              <p class="field-note">This demo keeps the autocomplete session internal so the form stays focused on buyer-facing inputs.</p>
+              <p class="field-note">Real integrations must send a stable <code>session_id</code> across keystrokes. In production, the browser should also send a customer token or call your backend proxy.</p>
               <div class="live-meta">
                 <div class="meta-chip">Normalized query <strong id="resolvedQuery">-</strong></div>
                 <div class="meta-chip">Matches <strong id="matchCount">0</strong></div>
@@ -1315,6 +1352,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
     const animatedResultsEl = document.getElementById("animatedResults");
     const animatedStatusEl = document.getElementById("animatedStatus");
     const animatedCountEl = document.getElementById("animatedCount");
+    const animatedCountryBiasEl = document.getElementById("animatedCountryBias");
 
     const queryEl = document.getElementById("autocompleteQuery");
     const countryEl = document.getElementById("countryBias");
@@ -1340,7 +1378,8 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
     const animatedScenarios = [
       {
         typed: ["a", "av", "aven", "avenu", "avenue"],
-        status: "Showing the highest-confidence prefixes first.",
+        countryBias: "FR",
+        status: "Showing the highest-confidence prefixes first for a France-focused checkout.",
         results: [
           { street: "Avenue de France", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" },
           { street: "Avenue Foch", locality: "Paris", country: "FR", formatted: "Avenue Foch, 75116 Paris, FR" },
@@ -1348,18 +1387,32 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
         ]
       },
       {
-        typed: ["avenue d", "avenue de", "avenue de f", "avenue de fr", "avenue de france"],
-        status: "The candidate set narrows as the query becomes specific.",
+        typed: ["d", "do", "dol", "dlou", "dlouh", "dlouhá"],
+        countryBias: "CZ",
+        status: "Country bias is optional, but it helps keep suggestions on the right market.",
         results: [
-          { street: "Avenue de France", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" },
-          { street: "Avenue de France", locality: "Paris", country: "FR", formatted: "Avenue de France, 75013 Paris, FR" }
+          { street: "Dlouhá", locality: "Praha", country: "CZ", formatted: "Dlouhá 731/35, 110 00 Praha 1, CZ" },
+          { street: "Dlouhá", locality: "Brno", country: "CZ", formatted: "Dlouhá 12, 602 00 Brno-střed, CZ" },
+          { street: "Dlouhá třída", locality: "Havířov", country: "CZ", formatted: "Dlouhá třída 464/23, 736 01 Havířov, CZ" }
         ]
       },
       {
-        typed: ["avenue de france 1", "avenue de france 12", "avenue de france 123"],
-        status: "The UI can hand off the final value to address resolution on submit.",
+        typed: ["fr", "fri", "frie", "fried", "friedr", "friedri", "friedric", "friedrich"],
+        countryBias: "DE",
+        status: "The same UI works for Germany without changing the integration contract.",
         results: [
-          { street: "Avenue de France", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" }
+          { street: "Friedrichstraße", locality: "Berlin", country: "DE", formatted: "Friedrichstraße 123, 10117 Berlin, DE" },
+          { street: "Friedrich-Ebert-Anlage", locality: "Frankfurt am Main", country: "DE", formatted: "Friedrich-Ebert-Anlage 49, 60308 Frankfurt am Main, DE" },
+          { street: "Friedrichstraße", locality: "Düsseldorf", country: "DE", formatted: "Friedrichstraße 62, 40217 Düsseldorf, DE" }
+        ]
+      },
+      {
+        typed: ["via", "via r", "via ro", "via rom", "via roma", "via roma 2", "via roma 21"],
+        countryBias: "IT",
+        status: "Once the user reaches a concrete address, the form can pass the final value to resolution.",
+        results: [
+          { street: "Via Roma", locality: "Torino", country: "IT", formatted: "Via Roma 21, 10123 Torino, IT" },
+          { street: "Via Roma", locality: "Milano", country: "IT", formatted: "Via Roma 2, 20121 Milano, IT" }
         ]
       }
     ];
@@ -1553,6 +1606,9 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
       async function runScenario() {
         const scenario = animatedScenarios[scenarioIndex];
         scenarioIndex = (scenarioIndex + 1) % animatedScenarios.length;
+        animatedCountryBiasEl.textContent = scenario.countryBias
+          ? `Country bias optional: ${scenario.countryBias}`
+          : "Country bias optional";
 
         for (const value of scenario.typed) {
           animatedQueryEl.textContent = value;
@@ -1571,6 +1627,7 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 
         renderAnimatedResults([], "");
         animatedStatusEl.textContent = "Filtering candidates as the input narrows.";
+        animatedCountryBiasEl.textContent = "Country bias optional";
         animatedCountEl.textContent = "0 matches";
         await sleep(320);
         runScenario();
