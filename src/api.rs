@@ -1377,33 +1377,33 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 
     const animatedScenarios = [
       {
-        typed: ["a", "av", "aven", "avenu", "avenue"],
+        typed: ["a", "av", "aven", "avenue", "avenue de", "avenue de france", "avenue de france 1", "avenue de france 12", "avenue de france 123"],
         countryBias: "FR",
         status: "Showing the highest-confidence prefixes first for a France-focused checkout.",
         results: [
-          { street: "Avenue de France", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" },
-          { street: "Avenue Foch", locality: "Paris", country: "FR", formatted: "Avenue Foch, 75116 Paris, FR" },
-          { street: "Avenue Victor Hugo", locality: "Paris", country: "FR", formatted: "Avenue Victor Hugo, 75116 Paris, FR" }
+          { street: "Avenue de France", house: "123", locality: "Stiring-Wendel", country: "FR", formatted: "Avenue de France 123, 57350 Stiring-Wendel, FR" },
+          { street: "Avenue de France", house: "12", locality: "Paris", country: "FR", formatted: "Avenue de France 12, 75013 Paris, FR" },
+          { street: "Avenue Foch", house: "8", locality: "Paris", country: "FR", formatted: "Avenue Foch 8, 75116 Paris, FR" }
         ]
       },
       {
-        typed: ["d", "do", "dol", "dlou", "dlouh", "dlouhá"],
+        typed: ["d", "dl", "dlo", "dlou", "dlouh", "dlouhá", "dlouhá 7", "dlouhá 73", "dlouhá 731"],
         countryBias: "CZ",
         status: "Country bias is optional, but it helps keep suggestions on the right market.",
         results: [
-          { street: "Dlouhá", locality: "Praha", country: "CZ", formatted: "Dlouhá 731/35, 110 00 Praha 1, CZ" },
-          { street: "Dlouhá", locality: "Brno", country: "CZ", formatted: "Dlouhá 12, 602 00 Brno-střed, CZ" },
-          { street: "Dlouhá třída", locality: "Havířov", country: "CZ", formatted: "Dlouhá třída 464/23, 736 01 Havířov, CZ" }
+          { street: "Dlouhá", house: "731/35", locality: "Praha", country: "CZ", formatted: "Dlouhá 731/35, 110 00 Praha 1, CZ" },
+          { street: "Dlouhá", house: "73", locality: "Brno", country: "CZ", formatted: "Dlouhá 73, 602 00 Brno-střed, CZ" },
+          { street: "Dlouhá třída", house: "464/23", locality: "Havířov", country: "CZ", formatted: "Dlouhá třída 464/23, 736 01 Havířov, CZ" }
         ]
       },
       {
-        typed: ["fr", "fri", "frie", "fried", "friedr", "friedri", "friedric", "friedrich"],
+        typed: ["fr", "fri", "frie", "fried", "friedr", "friedri", "friedrich", "friedrichs", "friedrichstraße", "friedrichstraße 1", "friedrichstraße 12", "friedrichstraße 123"],
         countryBias: "DE",
         status: "The same UI works for Germany without changing the integration contract.",
         results: [
-          { street: "Friedrichstraße", locality: "Berlin", country: "DE", formatted: "Friedrichstraße 123, 10117 Berlin, DE" },
-          { street: "Friedrich-Ebert-Anlage", locality: "Frankfurt am Main", country: "DE", formatted: "Friedrich-Ebert-Anlage 49, 60308 Frankfurt am Main, DE" },
-          { street: "Friedrichstraße", locality: "Düsseldorf", country: "DE", formatted: "Friedrichstraße 62, 40217 Düsseldorf, DE" }
+          { street: "Friedrichstraße", house: "123", locality: "Berlin", country: "DE", formatted: "Friedrichstraße 123, 10117 Berlin, DE" },
+          { street: "Friedrichstraße", house: "12", locality: "Düsseldorf", country: "DE", formatted: "Friedrichstraße 12, 40217 Düsseldorf, DE" },
+          { street: "Friedrich-Ebert-Anlage", house: "49", locality: "Frankfurt am Main", country: "DE", formatted: "Friedrich-Ebert-Anlage 49, 60308 Frankfurt am Main, DE" }
         ]
       },
       {
@@ -1411,8 +1411,8 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
         countryBias: "IT",
         status: "Once the user reaches a concrete address, the form can pass the final value to resolution.",
         results: [
-          { street: "Via Roma", locality: "Torino", country: "IT", formatted: "Via Roma 21, 10123 Torino, IT" },
-          { street: "Via Roma", locality: "Milano", country: "IT", formatted: "Via Roma 2, 20121 Milano, IT" }
+          { street: "Via Roma", house: "21", locality: "Torino", country: "IT", formatted: "Via Roma 21, 10123 Torino, IT" },
+          { street: "Via Roma", house: "2", locality: "Milano", country: "IT", formatted: "Via Roma 2, 20121 Milano, IT" }
         ]
       }
     ];
@@ -1612,9 +1612,10 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
 
         for (const value of scenario.typed) {
           animatedQueryEl.textContent = value;
-          renderAnimatedResults(scenario.results, value);
+          const filteredResults = filterAnimatedResults(scenario.results, value);
+          renderAnimatedResults(filteredResults, value);
           animatedStatusEl.textContent = scenario.status;
-          animatedCountEl.textContent = `${scenario.results.length} ${scenario.results.length === 1 ? "match" : "matches"}`;
+          animatedCountEl.textContent = `${filteredResults.length} ${filteredResults.length === 1 ? "match" : "matches"}`;
           await sleep(480);
         }
 
@@ -1647,6 +1648,29 @@ const SANDBOX_HTML: &str = r##"<!doctype html>
           <div class="detail-value">${escapeHtml(item.formatted)}</div>
         </article>
       `).join("");
+    }
+
+    function filterAnimatedResults(results, value) {
+      const query = value.trim().toLowerCase();
+      if (!query) {
+        return [];
+      }
+
+      return results.filter((item) => {
+        const street = item.street.toLowerCase();
+        const house = (item.house || "").toLowerCase();
+
+        if (query.length <= street.length) {
+          return street.startsWith(query);
+        }
+
+        if (!query.startsWith(`${street} `)) {
+          return false;
+        }
+
+        const houseQuery = query.slice(street.length + 1);
+        return house.startsWith(houseQuery);
+      });
     }
 
     function highlightPrefix(text, prefix) {
